@@ -1,0 +1,54 @@
+{
+  "name": "fluid",
+  "version": "0.1.0",
+  "description": "Simple, lightweight, and blazing fast UI library",
+  "type": "module",
+  "exports": "./dist/index.js",
+  "scripts": {
+    "clean:build": "shx rm -rf ./build/",
+    "clean:dist": "shx rm -rf ./dist/",
+    "clean": "npm-run-all --parallel clean:build clean:dist",
+    "watch:tsc": "tsc --watch",
+    "watch:rollup": "rollup --watch --silent --config ./rollup.config.js",
+    "watch": "npm-run-all --parallel watch:tsc watch:rollup",
+    "build:tsc": "tsc --declaration --declarationDir ./dist/",
+    "build:rollup": "rollup --config ./rollup.config.js",
+    "build:terser": "terser --config-file ./terser.json --output ./dist/index.min.js ./dist/index.js",
+    "build": "npm-run-all --sequential build:tsc build:rollup build:terser",
+    "format": "prettier --write ./src/ ./*.json ./*.js ./*.cjs ./*.md",
+    "lint": "eslint --fix --ext .ts ./src/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HereIsKevin/fluid.git"
+  },
+  "keywords": [
+    "simple",
+    "lightweight",
+    "fast",
+    "ui",
+    "templating",
+    "framework",
+    "virtual",
+    "dom",
+    "minimal",
+    "template"
+  ],
+  "author": "Kevin Feng",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/HereIsKevin/fluid/issues"
+  },
+  "homepage": "https://github.com/HereIsKevin/fluid#readme",
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^4.19.0",
+    "@typescript-eslint/parser": "^4.19.0",
+    "eslint": "^7.22.0",
+    "npm-run-all": "^4.1.5",
+    "prettier": "^2.2.1",
+    "rollup": "^2.42.3",
+    "shx": "^0.3.3",
+    "terser": "^5.6.1",
+    "typescript": "^4.2.3"
+  }
+}
