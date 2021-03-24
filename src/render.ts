@@ -93,6 +93,9 @@ function renderTemplate(
       throw new Error("index does not exist in template");
     }
   }
+
+  cache.template = template;
+  caches.set(start, cache);
 }
 
 function render(target: Element, template: Template): void {
