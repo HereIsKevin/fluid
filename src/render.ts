@@ -74,7 +74,7 @@ function renderTemplate(
     start.after(compiler.fragment);
   }
 
-  const oldValues = cache.values;
+  const oldValues = cache.template.values;
   const newValues = template.values;
 
   for (let index = 0; index < newValues.length; index++) {
