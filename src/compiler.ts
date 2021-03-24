@@ -49,6 +49,10 @@ class Compiler {
     const eventMatches = attribute.match(/^@(.+)$/);
     const toggleMatches = attribute.match(/^(.+)\?$/);
 
+    if (eventMatches !== null && toggleMatches !== null) {
+      throw new Error("attribute kind cannot be both event and toggle");
+    }
+
     if (eventMatches !== null) {
       return { kind: "event", name: eventMatches[1] };
     } else if (toggleMatches !== null) {
