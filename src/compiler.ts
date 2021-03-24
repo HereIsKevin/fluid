@@ -72,8 +72,9 @@ class Compiler {
         const { kind, name } = this.matchAttribute(attribute);
 
         this.attributes[index] = { kind, element, name };
+        console.log(this.attributes[index]);
 
-        element.removeAttribute(name);
+        element.removeAttribute(attribute);
       }
     }
   }
