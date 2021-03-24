@@ -1,4 +1,4 @@
-export { CompiledAttribute, CompiledTemplate, CompiledValue };
+export { CompiledAttribute, CompiledValue, Compiler };
 
 import { Template } from "./template";
 
@@ -14,7 +14,7 @@ interface CompiledValue {
   end: Comment;
 }
 
-class CompiledTemplate {
+class Compiler {
   public attributes: Record<number, CompiledAttribute>;
   public values: Record<number, CompiledValue>;
 
@@ -43,76 +43,65 @@ class CompiledTemplate {
     }
   }
 
+  private matchAttribute(
+    attribute: string
+  ): { kind: "event" | "toggle" | "value"; name: string } {
+    const eventMatches = attribute.match(/^@(.+)$/);
+    const toggleMatches = attribute.match(/^(.+)\?$/);
+
+    if (eventMatches !== null) {
+      return { kind: "event", name: eventMatches[1] };
+    } else if (toggleMatches !== null) {
+      return { kind: "toggle", name: toggleMatches[1] };
+    } else {
+      return { kind: "value", name: attribute };
+    }
+  }
+
   private compileAttributes(element: Element): void {
-    for (const name of element.getAttributeNames()) {
-      const value = element.getAttribute(name) ?? "";
+    for (const attribute of element.getAttributeNames()) {
+      const value = element.getAttribute(attribute) ?? "";
       const matches = value.match(/^<!--([0-9]+)-->$/);
 
       if (matches !== null) {
         const index = Number(matches[1]);
-        const eventMatches = name.match(/^@(.+)$/);
-        const toggleMatches = name.match(/^(.+)\?$/);
+        const { kind, name } = this.matchAttribute(attribute);
 
-        if (eventMatches !== null) {
-          this.attributes[index] = {
-            kind: "event",
-            element: element,
-            name: eventMatches[1],
-          };
-        } else if (toggleMatches !== null) {
-          this.attributes[index] = {
-            kind: "toggle",
-            element: element,
-            name: toggleMatches[1],
-          };
-        } else {
-          this.attributes[index] = {
-            kind: "value",
-            element: element,
-            name: name,
-          };
-        }
+        this.attributes[index] = { kind, element, name };
 
         element.removeAttribute(name);
       }
     }
   }
 
-  private compileValues(node: Node): void {
-    let current = node.firstChild;
+  private findComments(node: Node): Comment[] {
+    const result: Comment[] = [];
 
-    while (current !== null) {
-      if (current instanceof Comment) {
-        const value = current.nodeValue ?? "";
-        const matches = value.match(/^([0-9]+)$/);
-
-        if (matches !== null) {
-          const start = new Comment();
-          const end = new Comment();
-
-          current.replaceWith(start, end);
-          current = end;
-
-          const index = Number(matches[1]);
-          const actual = this.template.values[index];
-
-          if (actual instanceof Template) {
-            this.values[index] = {
-              kind: "template",
-              start: start,
-              end: end,
-            };
-          } else {
-            this.values[index] = {
-              kind: "text",
-              start: start,
-              end: end,
-            };
-          }
-        }
+    for (const child of node.childNodes) {
+      if (child instanceof Comment) {
+        result.push(child);
       }
+    }
 
-      current = current.nextSibling;
+    return result;
+  }
+
+  private compileValues(node: Node): void {
+    for (const comment of this.findComments(node)) {
+      const value = comment.nodeValue ?? "";
+      const matches = value.match(/^([0-9]+)$/);
+
+      if (matches !== null) {
+        const index = Number(matches[1]);
+        const actual = this.template.values[index];
+        const kind = actual instanceof Template ? "template" : "text";
+        const start = new Comment();
+        const end = new Comment();
+
+        this.values[index] = { kind, start, end };
+
+        comment.replaceWith(start, end);
+      }
     }
   }
 }
