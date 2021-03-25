@@ -9,7 +9,7 @@ interface CompiledAttribute {
 }
 
 interface CompiledValue {
-  kind: "template" | "text";
+  kind: "sequence" | "template" | "text";
   start: Comment;
   end: Comment;
 }
@@ -90,6 +90,16 @@ class Compiler {
     return result;
   }
 
+  private matchValue(value: unknown): "sequence" | "template" | "text" {
+    if (Array.isArray(value)) {
+      return "sequence";
+    } else if (value instanceof Template) {
+      return "template";
+    } else {
+      return "text";
+    }
+  }
+
   private compileValues(node: Node): void {
     for (const comment of this.findComments(node)) {
       const value = comment.nodeValue ?? "";
@@ -98,7 +108,7 @@ class Compiler {
       if (matches !== null) {
         const index = Number(matches[1]);
         const actual = this.template.values[index];
-        const kind = actual instanceof Template ? "template" : "text";
+        const kind = this.matchValue(actual);
         const start = new Comment();
         const end = new Comment();
 
