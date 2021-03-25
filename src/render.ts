@@ -31,12 +31,76 @@ function renderAttribute(
   }
 }
 
+function renderSequence(
+  start: Comment,
+  end: Comment,
+  oldTemplates: Template[],
+  newTemplates: Template[]
+): void {
+  if (start.nextSibling === end) {
+    for (const template of newTemplates) {
+      const separator = new Comment("separator");
+
+      end.before(separator);
+      renderTemplate(separator, end, template);
+    }
+
+    return;
+  }
+
+  const separators: Comment[] = [];
+
+  let current = start.nextSibling;
+
+  while (current !== null && current !== end) {
+    if (current instanceof Comment && current.nodeValue === "separator") {
+      separators.push(current);
+    }
+
+    current = current.nextSibling;
+  }
+
+  let length = newTemplates.length;
+
+  while (length > oldTemplates.length) {
+    const separator = separators[separators.length - 1];
+
+    while (end.previousSibling !== null && end.previousSibling !== separator) {
+      end.previousSibling.remove();
+    }
+
+    separator.remove();
+    separators.pop();
+    length--;
+  }
+
+  while (length < newTemplates.length) {
+    const separator = new Comment("separator");
+
+    end.before(separator);
+    renderTemplate(separator, end, newTemplates[length - 1]);
+
+    separators.push(separator);
+    length++;
+  }
+
+  for (let index = 0; index < separators.length; index++) {
+    const startSeparator = separators[index];
+    const endSeparator = separators[index + 1] ?? end;
+    const template = newTemplates[index];
+
+    renderTemplate(startSeparator, endSeparator, template);
+  }
+}
+
 function renderValues(
   { kind, start, end }: CompiledValue,
   oldValue: unknown,
   newValue: unknown
 ): void {
-  if (kind === "template") {
+  if (kind === "sequence") {
+    renderSequence(start, end, oldValue as Template[], newValue as Template[]);
+  } else if (kind === "template") {
     if (newValue instanceof Template) {
       renderTemplate(start, end, newValue);
     } else {
