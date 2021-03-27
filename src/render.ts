@@ -117,6 +117,26 @@ function renderValues(
   }
 }
 
+function arrayEqual(
+  firstArray: ArrayLike<unknown>,
+  secondArray: ArrayLike<unknown>
+): boolean {
+  if (firstArray.length !== secondArray.length) {
+    return false;
+  }
+
+  for (let index = 0; index < firstArray.length; index++) {
+    const firstValue = firstArray[index];
+    const secondValue = secondArray[index];
+
+    if (firstValue !== secondValue) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 function renderTemplate(
   start: Comment,
   end: Comment,
@@ -125,8 +145,18 @@ function renderTemplate(
   let rendered = true;
   let cache = caches.get(start);
 
-  if (typeof cache === "undefined") {
+  if (
+    typeof cache === "undefined" ||
+    !arrayEqual(cache.template.strings, template.strings)
+  ) {
     const compiler = new Compiler(template);
+
+    let current = start.nextSibling;
+
+    while (current !== null && current !== end) {
+      current.remove();
+      current = start.nextSibling;
+    }
 
     rendered = false;
     cache = {
