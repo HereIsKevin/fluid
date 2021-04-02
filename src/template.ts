@@ -9,6 +9,20 @@ class Template {
     this.values = values;
   }
 
+  public equalStrings(template: Template): boolean {
+    if (this.strings.length !== template.strings.length) {
+      return false;
+    }
+
+    for (let index = 0; index < this.strings.length; index++) {
+      if (this.strings[index] !== template.strings[index]) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   public generate(): DocumentFragment {
     let result = this.strings[0];
 
