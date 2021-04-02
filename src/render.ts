@@ -230,7 +230,7 @@ function renderAttribute(
 function render(target: Element, template: Template): void {
   if (!templates.has(target)) {
     clearElement(target);
-    target.append(new Comment("original"), new Comment("original"));
+    target.append(new Comment(), new Comment());
   }
 
   const start = target.firstChild;
