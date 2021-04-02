@@ -187,8 +187,14 @@ function renderTemplate(
 }
 
 function renderText(start: Comment, end: Comment, value: string): void {
-  clearNodes(start, end);
-  start.after(new Text(value));
+  const next = start.nextSibling
+
+  if (next instanceof Text && next.nextSibling === end) {
+    next.nodeValue = value;
+  } else {
+    clearNodes(start, end);
+    start.after(new Text(value));
+  }
 }
 
 function renderValue(
