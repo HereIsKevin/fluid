@@ -1,2 +1,2 @@
-export { html } from "./template";
 export { render } from "./render";
+export { html } from "./template";
