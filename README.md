@@ -3,7 +3,7 @@
 Fluid is an user interface library for the web.
 
 - **Simple:** Tiny API with only two functions, `html` and `render`
-- **Lightweight:** Only **1.5 KB ** minified and gzipped
+- **Lightweight:** Only **1.5 KB** minified and gzipped
 - **Blazing Fast:** Updates only what has changed **without virtual DOM**
 - **Flexible:** No assumptions about anything, just a simple library
 - **Declarative:** Just **render everything** when changes occur, no painful updates
