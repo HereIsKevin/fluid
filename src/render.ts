@@ -74,7 +74,13 @@ function renderSequence(
   }
 
   while (newTemplates.length < sequence.length) {
-    const { separator, start, end } = sequence.pop()!; // assertion!
+    const popped = sequence.pop();
+
+    if (typeof popped === "undefined") {
+      throw new Error("cannot align sequence length");
+    }
+
+    const { separator, start, end } = popped;
 
     clearNodes(start, end);
 
