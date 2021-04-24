@@ -3,13 +3,20 @@ export { render };
 import { CompiledAttribute, CompiledValue, Compiler } from "./compiler";
 import { Template } from "./template";
 
-interface RenderCache {
+interface Cache {
   attributes: Record<number, CompiledAttribute>;
   values: Record<number, CompiledValue>;
 }
 
+interface Sequence {
+  separator: Comment;
+  start: Comment;
+  end: Comment;
+}
+
 const templates = new WeakMap<Element, Template>();
-const caches = new WeakMap<Comment, RenderCache>();
+const caches = new WeakMap<Comment, Cache>();
+const sequences = new WeakMap<Comment, Sequence[]>();
 
 function clearElement(element: Element): void {
   while (element.firstChild) {
@@ -24,6 +31,78 @@ function clearNodes(start: Node, end: Node): void {
     current.remove();
     current = start.nextSibling;
   }
+}
+
+function renderSequence(
+  startMarker: Comment,
+  endMarker: Comment,
+  oldTemplates: Template[] | undefined,
+  newTemplates: Template[]
+): void {
+  if (typeof oldTemplates === "undefined" || oldTemplates.length === 0) {
+    clearNodes(startMarker, endMarker);
+
+    const sequence: Sequence[] = [];
+
+    for (const template of newTemplates) {
+      const separator = new Comment();
+      const start = new Comment();
+      const end = new Comment();
+
+      endMarker.before(separator, start, end);
+      renderTemplate(start, end, undefined, template);
+
+      sequence.push({ separator, start, end });
+    }
+
+    sequences.set(startMarker, sequence);
+
+    return;
+  }
+
+  if (newTemplates.length === 0) {
+    clearNodes(startMarker, endMarker);
+    sequences.set(startMarker, []);
+
+    return;
+  }
+
+  const sequence = sequences.get(startMarker);
+
+  if (typeof sequence === "undefined") {
+    throw new Error("sequence missing");
+  }
+
+  while (newTemplates.length < sequence.length) {
+    const { separator, start, end } = sequence.pop()!; // assertion!
+
+    clearNodes(start, end);
+
+    separator.remove();
+    start.remove();
+    end.remove();
+  }
+
+  while (newTemplates.length > sequence.length) {
+    const separator = new Comment();
+    const start = new Comment();
+    const end = new Comment();
+
+    endMarker.before(separator, start, end);
+    renderTemplate(start, end, undefined, newTemplates[sequence.length]);
+
+    sequence.push({ separator, start, end });
+  }
+
+  for (let index = 0; index < sequence.length; index++) {
+    const { start, end } = sequence[index];
+    const oldTemplate = oldTemplates[index];
+    const newTemplate = newTemplates[index];
+
+    renderTemplate(start, end, oldTemplate, newTemplate);
+  }
+
+  sequences.set(startMarker, sequence);
 }
 
 function renderTemplate(
@@ -97,7 +176,9 @@ function renderValue(
   oldValue: unknown,
   newValue: unknown
 ): void {
-  if (kind === "template") {
+  if (kind === "sequence") {
+    renderSequence(start, end, oldValue as Template[], newValue as Template[]);
+  } else if (kind === "template") {
     renderTemplate(start, end, oldValue as Template, newValue as Template);
   } else if (kind === "text") {
     renderText(start, end, String(newValue));
