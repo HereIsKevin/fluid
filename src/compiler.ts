@@ -9,7 +9,7 @@ interface CompiledAttribute {
 }
 
 interface CompiledValue {
-  kind: "sequence" | "template" | "text";
+  kind: "template" | "text";
   start: Comment;
   end: Comment;
 }
@@ -90,10 +90,8 @@ class Compiler {
     return result;
   }
 
-  private matchValue(value: unknown): "sequence" | "template" | "text" {
-    if (Array.isArray(value)) {
-      return "sequence";
-    } else if (value instanceof Template) {
+  private matchValue(value: unknown): "template" | "text" {
+    if (value instanceof Template) {
       return "template";
     } else {
       return "text";

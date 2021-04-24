@@ -10,7 +10,6 @@ interface RenderCache {
 
 const templates = new WeakMap<Element, Template>();
 const caches = new WeakMap<Comment, RenderCache>();
-const sequences = new WeakMap<Comment, Comment[]>();
 
 function clearElement(element: Element): void {
   while (element.firstChild) {
@@ -25,110 +24,6 @@ function clearNodes(start: Node, end: Node): void {
     current.remove();
     current = start.nextSibling;
   }
-}
-
-function renderSequence(
-  start: Comment,
-  end: Comment,
-  oldTemplates: Template[] | undefined,
-  newTemplates: Template[]
-): void {
-  if (typeof oldTemplates === "undefined" || oldTemplates.length === 0) {
-    const separators = [];
-
-    for (const template of newTemplates) {
-      const separator = new Comment();
-      const startMarker = new Comment();
-      const endMarker = new Comment();
-
-      end.before(separator, startMarker, endMarker);
-      renderTemplate(startMarker, endMarker, undefined, template);
-
-      separators.push(separator);
-    }
-
-    sequences.set(start, separators);
-
-    return;
-  }
-
-  if (newTemplates.length === 0) {
-    let current = start.nextSibling;
-
-    while (current !== null && current !== end) {
-      current.remove();
-      current = start.nextSibling;
-    }
-
-    sequences.set(start, []);
-
-    return;
-  }
-
-  oldTemplates = [...oldTemplates];
-
-  const sequence = sequences.get(start);
-  const length = Math.max(newTemplates.length, oldTemplates.length);
-
-  if (typeof sequence === "undefined") {
-    throw new Error("render sequence is missing");
-  }
-
-  let modifier = 0;
-
-  for (let index = 0; index < length; index++) {
-    const position = index - modifier;
-    const oldTemplate = oldTemplates[position];
-
-    if (
-      typeof oldTemplate !== "undefined" &&
-      oldTemplate.equalStrings(newTemplates[position]) &&
-      oldTemplate.equalStrings(newTemplates[index])
-    ) {
-      oldTemplates.splice(position, 1);
-
-      clearNodes(sequence[position], sequence[position + 1] ?? end);
-      sequence[position].remove();
-      sequence.splice(position, 1);
-
-      modifier++;
-    }
-  }
-
-  let index = 0;
-
-  while (index < newTemplates.length) {
-    const oldTemplate = oldTemplates[index];
-    const newTemplate = newTemplates[index];
-
-    if (
-      typeof oldTemplate === "undefined" ||
-      !newTemplate.equalStrings(oldTemplate)
-    ) {
-      const insertion = sequence[index] ?? end;
-      const separator = new Comment();
-      const startMarker = new Comment();
-      const endMarker = new Comment();
-
-      insertion.before(separator, startMarker, endMarker);
-      renderTemplate(startMarker, endMarker, undefined, newTemplate);
-
-      sequence.splice(index, 0, separator);
-    } else {
-      const startMarker = sequence[index].nextSibling;
-      const endMarker = (sequence[index + 1] ?? end).previousSibling;
-
-      if (startMarker instanceof Comment && endMarker instanceof Comment) {
-        renderTemplate(startMarker, endMarker, oldTemplate, newTemplate);
-      } else {
-        throw new Error("start or end markers are missing");
-      }
-    }
-
-    index++;
-  }
-
-  sequences.set(start, sequence);
 }
 
 function renderTemplate(
@@ -187,7 +82,7 @@ function renderTemplate(
 }
 
 function renderText(start: Comment, end: Comment, value: string): void {
-  const next = start.nextSibling
+  const next = start.nextSibling;
 
   if (next instanceof Text && next.nextSibling === end) {
     next.nodeValue = value;
@@ -202,9 +97,7 @@ function renderValue(
   oldValue: unknown,
   newValue: unknown
 ): void {
-  if (kind === "sequence") {
-    renderSequence(start, end, oldValue as Template[], newValue as Template[]);
-  } else if (kind === "template") {
+  if (kind === "template") {
     renderTemplate(start, end, oldValue as Template, newValue as Template);
   } else if (kind === "text") {
     renderText(start, end, String(newValue));
