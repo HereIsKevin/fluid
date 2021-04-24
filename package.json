@@ -1,5 +1,5 @@
 {
-  "name": "fluid",
+  "name": "@hereiskevin/fluid",
   "version": "0.1.0",
   "description": "Simple, lightweight, and blazing fast UI library",
   "type": "module",
