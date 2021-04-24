@@ -1,3 +1,4 @@
+build/
 .eslintrc.cjs
 .prettierrc.json
 rollup.config.js
