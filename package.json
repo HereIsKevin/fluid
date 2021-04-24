@@ -1,5 +1,5 @@
 {
-  "name": "fluid",
+  "name": "fluidui",
   "version": "0.1.0",
   "description": "Simple, lightweight, and blazing fast UI library",
   "type": "module",
@@ -20,7 +20,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/HereIsKevin/fluid.git"
+    "url": "git+https://github.com/HereIsKevin/fluidui.git"
   },
   "keywords": [
     "simple",
@@ -37,9 +37,9 @@
   "author": "Kevin Feng",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/HereIsKevin/fluid/issues"
+    "url": "https://github.com/HereIsKevin/fluidui/issues"
   },
-  "homepage": "https://github.com/HereIsKevin/fluid#readme",
+  "homepage": "https://github.com/HereIsKevin/fluidui#readme",
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^4.22.0",
     "@typescript-eslint/parser": "^4.22.0",
