@@ -4,6 +4,7 @@
   "description": "Simple, lightweight, and blazing fast UI library",
   "type": "module",
   "exports": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "clean:build": "shx rm -rf ./build/",
     "clean:dist": "shx rm -rf ./dist/",
