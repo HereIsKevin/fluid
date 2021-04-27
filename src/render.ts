@@ -109,7 +109,7 @@ function renderArrangement(
   }
 
   for (const index of insert) {
-    const marker = sequence[index].separator ?? endMarker;
+    const marker = sequence[index]?.separator ?? endMarker;
     const template = newArrangements[index][1];
 
     const separator = new Comment();
