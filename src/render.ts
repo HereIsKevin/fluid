@@ -9,8 +9,6 @@ interface Cache {
   values: Record<number, CompiledValue>;
 }
 
-type Arrangement = [string | number, Template];
-
 interface Sequence {
   separator: Comment;
   start: Comment;
@@ -34,95 +32,6 @@ function clearNodes(start: Node, end: Node): void {
     current.remove();
     current = start.nextSibling;
   }
-}
-
-function renderArrangement(
-  startMarker: Comment,
-  endMarker: Comment,
-  oldArrangements: Arrangement[] | undefined,
-  newArrangements: Arrangement[]
-): void {
-  if (typeof oldArrangements === "undefined" || oldArrangements.length === 0) {
-    clearNodes(startMarker, endMarker);
-
-    const sequence: Sequence[] = [];
-
-    for (const [key, template] of newArrangements) {
-      const separator = new Comment();
-      const start = new Comment();
-      const end = new Comment();
-
-      endMarker.before(separator, start, end);
-      renderTemplate(start, end, undefined, template);
-
-      sequence.push({ separator, start, end });
-    }
-
-    sequences.set(startMarker, sequence);
-
-    return;
-  }
-
-  if (newArrangements.length === 0) {
-    clearNodes(startMarker, endMarker);
-    sequences.set(startMarker, []);
-
-    return;
-  }
-
-  const sequence = sequences.get(startMarker);
-
-  if (typeof sequence === "undefined") {
-    throw new Error("sequence missing");
-  }
-
-  const oldKeys = oldArrangements.map((arrangement) => arrangement[0]);
-  const newKeys = newArrangements.map((arrangement) => arrangement[0]);
-
-  const keep = diff(oldKeys, newKeys);
-  const keepOld = keep.map((x) => x[0]);
-  const keepNew = keep.map((x) => x[1]);
-  const allOld = [...oldArrangements.keys()];
-  const allNew = [...newArrangements.keys()];
-  const remove = allOld.filter((x) => !keepOld.includes(x));
-  const insert = allNew.filter((x) => !keepNew.includes(x));
-
-  for (const [oldIndex, newIndex] of keep) {
-    const { start, end } = sequence[newIndex];
-    const oldTemplate = oldArrangements[oldIndex][1];
-    const newTemplate = newArrangements[newIndex][1];
-
-    renderTemplate(start, end, oldTemplate, newTemplate);
-  }
-
-  for (let modifier = 0; modifier < remove.length; modifier++) {
-    const position = remove[modifier] - modifier;
-    const { separator, start, end } = sequence[position];
-
-    clearNodes(start, end);
-
-    separator.remove();
-    start.remove();
-    end.remove();
-
-    sequence.splice(position, 1);
-  }
-
-  for (const index of insert) {
-    const marker = sequence[index]?.separator ?? endMarker;
-    const template = newArrangements[index][1];
-
-    const separator = new Comment();
-    const start = new Comment();
-    const end = new Comment();
-
-    marker.before(separator, start, end);
-    renderTemplate(start, end, undefined, template);
-
-    sequence.splice(index, 0, { separator, start, end });
-  }
-
-  sequences.set(startMarker, sequence);
 }
 
 function renderSequence(
@@ -275,21 +184,6 @@ function renderValue(
   newValue: unknown
 ): void {
   if (kind === "sequence") {
-    if (Array.isArray(newValue) && Array.isArray(newValue[0])) {
-      renderArrangement(
-        start,
-        end,
-        oldValue as Arrangement[],
-        newValue as Arrangement[]
-      );
-    } else {
-      renderSequence(
-        start,
-        end,
-        oldValue as Template[],
-        newValue as Template[]
-      );
-    }
   } else if (kind === "template") {
     renderTemplate(start, end, oldValue as Template, newValue as Template);
   } else if (kind === "text") {
