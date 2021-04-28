@@ -3,15 +3,13 @@ export { CompiledAttribute, CompiledValue, Compiler };
 import { Template } from "./template";
 
 interface CompiledAttribute {
-  kind: "event" | "toggle" | "value";
-  element: Element;
-  name: string;
+  elementId: string;
+  attribute: string;
 }
 
 interface CompiledValue {
-  kind: "sequence" | "template" | "text";
-  start: Comment;
-  end: Comment;
+  startId: string;
+  endId: string;
 }
 
 class Compiler {
@@ -21,6 +19,8 @@ class Compiler {
   public template: Template;
   public fragment: DocumentFragment;
 
+  private id: number;
+
   public constructor(template: Template) {
     this.attributes = {};
     this.values = {};
@@ -28,7 +28,16 @@ class Compiler {
     this.template = template;
     this.fragment = this.template.generate();
 
+    this.id = 0;
+
     this.compile(this.fragment);
+  }
+
+  private createId(): string {
+    const id = String(this.id);
+    this.id++;
+
+    return id;
   }
 
   private compile(node: Node): void {
@@ -43,35 +52,22 @@ class Compiler {
     }
   }
 
-  private matchAttribute(
-    attribute: string
-  ): { kind: "event" | "toggle" | "value"; name: string } {
-    const eventMatches = attribute.match(/^@(.+)$/);
-    const toggleMatches = attribute.match(/^(.+)\?$/);
-
-    if (eventMatches !== null && toggleMatches !== null) {
-      throw new Error("attribute kind cannot be both event and toggle");
-    }
-
-    if (eventMatches !== null) {
-      return { kind: "event", name: eventMatches[1] };
-    } else if (toggleMatches !== null) {
-      return { kind: "toggle", name: toggleMatches[1] };
-    } else {
-      return { kind: "value", name: attribute };
-    }
-  }
-
   private compileAttributes(element: Element): void {
+    let elementId: string | undefined;
+
     for (const attribute of element.getAttributeNames()) {
       const value = element.getAttribute(attribute) ?? "";
       const matches = value.match(/^<!--([0-9]+)-->$/);
 
       if (matches !== null) {
-        const index = Number(matches[1]);
-        const { kind, name } = this.matchAttribute(attribute);
+        if (typeof elementId === "undefined") {
+          elementId = this.createId();
+          element.id = elementId;
+        }
 
-        this.attributes[index] = { kind, element, name };
+        const index = Number(matches[1]);
+
+        this.attributes[index] = { elementId, attribute };
 
         element.removeAttribute(attribute);
       }
@@ -90,16 +86,6 @@ class Compiler {
     return result;
   }
 
-  private matchValue(value: unknown): "sequence" | "template" | "text" {
-    if (Array.isArray(value)) {
-      return "sequence";
-    } else if (value instanceof Template) {
-      return "template";
-    } else {
-      return "text";
-    }
-  }
-
   private compileValues(node: Node): void {
     for (const comment of this.findComments(node)) {
       const value = comment.nodeValue ?? "";
@@ -108,11 +94,18 @@ class Compiler {
       if (matches !== null) {
         const index = Number(matches[1]);
         const actual = this.template.values[index];
-        const kind = this.matchValue(actual);
-        const start = new Comment();
-        const end = new Comment();
 
-        this.values[index] = { kind, start, end };
+        const startId = this.createId();
+        const start = document.createElement("span");
+
+        start.id = startId;
+
+        const endId = this.createId();
+        const end = document.createElement("span");
+
+        end.id = endId;
+
+        this.values[index] = { startId, endId };
 
         comment.replaceWith(start, end);
       }
