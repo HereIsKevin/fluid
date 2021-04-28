@@ -54,6 +54,7 @@ class Compiler {
 
   private compileAttributes(element: Element): void {
     let elementId: string | undefined;
+    const originalId = element.id;
 
     for (const attribute of element.getAttributeNames()) {
       const value = element.getAttribute(attribute) ?? "";
@@ -62,7 +63,7 @@ class Compiler {
       if (matches !== null) {
         if (typeof elementId === "undefined") {
           elementId = this.createId();
-          element.id = elementId;
+          element.setAttribute("data-fluid-id", elementId);
         }
 
         const index = Number(matches[1]);
@@ -98,12 +99,12 @@ class Compiler {
         const startId = this.createId();
         const start = document.createElement("span");
 
-        start.id = startId;
+        start.setAttribute("data-fluid-id", startId);
 
         const endId = this.createId();
         const end = document.createElement("span");
 
-        end.id = endId;
+        end.setAttribute("data-fluid-id", endId);
 
         this.values[index] = { startId, endId };
 
