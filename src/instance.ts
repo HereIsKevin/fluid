@@ -76,13 +76,19 @@ class Instance {
     for (const key in this.compiler.attributes) {
       const { elementId, attribute } = this.compiler.attributes[key];
       const { kind, name } = this.matchAttribute(attribute);
-      const element = this.fragment.getElementById(elementId);
+      const element = this.fragment.querySelector(
+        `[data-fluid-id="${elementId}"]`
+      );
 
       if (element === null) {
         throw new Error("cached fragment missing element");
       }
 
       this.attributes[key] = { kind, element, name };
+    }
+
+    for (const { element } of Object.values(this.attributes)) {
+      element.removeAttribute("data-fluid-id");
     }
   }
 
@@ -104,8 +110,13 @@ class Instance {
       const start = new Comment();
       const end = new Comment();
 
-      this.fragment.getElementById(startId)?.replaceWith(start);
-      this.fragment.getElementById(endId)?.replaceWith(end);
+      this.fragment
+        .querySelector(`[data-fluid-id="${startId}"`)
+        ?.replaceWith(start);
+
+      this.fragment
+        .querySelector(`[data-fluid-id="${endId}"`)
+        ?.replaceWith(end);
 
       this.values[key] = { kind, start, end };
     }
