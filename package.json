@@ -1,6 +1,6 @@
 {
   "name": "@hereiskevin/fluid",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Simple, lightweight, and blazing fast UI library",
   "type": "module",
   "exports": "./dist/index.js",
