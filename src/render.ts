@@ -1,12 +1,11 @@
 export { render };
 
-import { CompiledAttribute, CompiledValue, Compiler } from "./compiler";
-import { diff } from "./diff";
+import { InstanceAttribute, InstanceValue, Instance } from "./instance";
 import { Template } from "./template";
 
 interface Cache {
-  attributes: Record<number, CompiledAttribute>;
-  values: Record<number, CompiledValue>;
+  attributes: Record<number, InstanceAttribute>;
+  values: Record<number, InstanceValue>;
 }
 
 interface Sequence {
@@ -124,13 +123,13 @@ function renderTemplate(
   ) {
     clearNodes(start, end);
 
-    const compiler = new Compiler(newTemplate);
+    const instance = new Instance(newTemplate);
     const cache = {
-      attributes: compiler.attributes,
-      values: compiler.values,
+      attributes: instance.attributes,
+      values: instance.values,
     };
 
-    start.after(compiler.fragment);
+    start.after(instance.fragment);
 
     for (let index = 0; index < newTemplate.values.length; index++) {
       const value = newTemplate.values[index];
@@ -179,11 +178,12 @@ function renderText(start: Comment, end: Comment, value: string): void {
 }
 
 function renderValue(
-  { kind, start, end }: CompiledValue,
+  { kind, start, end }: InstanceValue,
   oldValue: unknown,
   newValue: unknown
 ): void {
   if (kind === "sequence") {
+    renderSequence(start, end, oldValue as Template[], newValue as Template[]);
   } else if (kind === "template") {
     renderTemplate(start, end, oldValue as Template, newValue as Template);
   } else if (kind === "text") {
@@ -192,7 +192,7 @@ function renderValue(
 }
 
 function renderAttribute(
-  { kind, name, element }: CompiledAttribute,
+  { kind, name, element }: InstanceAttribute,
   oldValue: unknown,
   newValue: unknown
 ): void {
