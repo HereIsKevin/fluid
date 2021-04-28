@@ -9,7 +9,6 @@ interface Cache {
 }
 
 interface Sequence {
-  separator: Comment;
   start: Comment;
   end: Comment;
 }
@@ -45,14 +44,13 @@ function renderSequence(
     const sequence: Sequence[] = [];
 
     for (const template of newTemplates) {
-      const separator = new Comment();
       const start = new Comment();
       const end = new Comment();
 
-      endMarker.before(separator, start, end);
+      endMarker.before(start, end);
       renderTemplate(start, end, undefined, template);
 
-      sequence.push({ separator, start, end });
+      sequence.push({ start, end });
     }
 
     sequences.set(startMarker, sequence);
@@ -80,24 +78,22 @@ function renderSequence(
       throw new Error("cannot align sequence length");
     }
 
-    const { separator, start, end } = popped;
+    const { start, end } = popped;
 
     clearNodes(start, end);
 
-    separator.remove();
     start.remove();
     end.remove();
   }
 
   while (newTemplates.length > sequence.length) {
-    const separator = new Comment();
     const start = new Comment();
     const end = new Comment();
 
-    endMarker.before(separator, start, end);
+    endMarker.before(start, end);
     renderTemplate(start, end, undefined, newTemplates[sequence.length]);
 
-    sequence.push({ separator, start, end });
+    sequence.push({ start, end });
   }
 
   for (let index = 0; index < sequence.length; index++) {
