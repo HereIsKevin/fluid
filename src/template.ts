@@ -1,8 +1,6 @@
 export { Template, html };
 
 class Template {
-  private static cache: Record<string, DocumentFragment> = {};
-
   public strings: TemplateStringsArray;
   public values: unknown[];
 
@@ -33,19 +31,10 @@ class Template {
       result += this.strings[index];
     }
 
-    const cached = Template.cache[result];
+    const template = document.createElement("template");
+    template.innerHTML = result;
 
-    if (typeof cached == "undefined") {
-      const template = document.createElement("template");
-      template.innerHTML = result;
-
-      const fragment = template.content;
-      Template.cache[result] = fragment;
-
-      return fragment.cloneNode(true) as DocumentFragment;
-    } else {
-      return cached.cloneNode(true) as DocumentFragment;
-    }
+    return template.content;
   }
 }
 
