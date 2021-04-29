@@ -39,16 +39,14 @@ class Instance {
   }
 
   private getCompiler(template: Template): Compiler {
-    for (let index = 0; index < compilers.length; index++) {
-      const compiler = compilers[index];
-
+    for (const compiler of compilers) {
       if (compiler.template.equalStrings(template)) {
         return compiler;
       }
     }
 
     const compiler = new Compiler(template);
-    compilers.push(compiler);
+    compilers.unshift(compiler);
 
     return compiler;
   }
@@ -104,19 +102,15 @@ class Instance {
 
   private instantiateValues(): void {
     for (const key in this.compiler.values) {
-      const { startId, endId } = this.compiler.values[key];
+      const { nodeId } = this.compiler.values[key];
       const kind = this.matchValue(this.template.values[key]);
 
       const start = new Comment();
       const end = new Comment();
 
       this.fragment
-        .querySelector(`[data-fluid-id="${startId}"`)
-        ?.replaceWith(start);
-
-      this.fragment
-        .querySelector(`[data-fluid-id="${endId}"`)
-        ?.replaceWith(end);
+        .querySelector(`[data-fluid-id="${nodeId}"`)
+        ?.replaceWith(start, end);
 
       this.values[key] = { kind, start, end };
     }

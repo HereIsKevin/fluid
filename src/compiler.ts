@@ -8,8 +8,7 @@ interface CompiledAttribute {
 }
 
 interface CompiledValue {
-  startId: string;
-  endId: string;
+  nodeId: string;
 }
 
 class Compiler {
@@ -96,19 +95,14 @@ class Compiler {
         const index = Number(matches[1]);
         const actual = this.template.values[index];
 
-        const startId = this.createId();
-        const start = document.createElement("span");
+        const nodeId = this.createId();
+        const node = document.createElement("span");
 
-        start.setAttribute("data-fluid-id", startId);
+        node.setAttribute("data-fluid-id", nodeId);
 
-        const endId = this.createId();
-        const end = document.createElement("span");
+        this.values[index] = { nodeId };
 
-        end.setAttribute("data-fluid-id", endId);
-
-        this.values[index] = { startId, endId };
-
-        comment.replaceWith(start, end);
+        comment.replaceWith(node);
       }
     }
   }
