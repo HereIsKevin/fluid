@@ -103,8 +103,6 @@ function renderSequence(
 
     renderTemplate(start, end, oldTemplate, newTemplate);
   }
-
-  sequences.set(startMarker, sequence);
 }
 
 function renderTemplate(
