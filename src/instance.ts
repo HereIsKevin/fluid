@@ -1,25 +1,13 @@
-export { InstanceAttribute, InstanceValue, Instance };
+export { Instance };
 
 import { Compiler } from "./compiler";
 import { Template } from "./template";
-
-interface InstanceAttribute {
-  kind: "event" | "toggle" | "value";
-  element: Element;
-  name: string;
-}
-
-interface InstanceValue {
-  kind: "sequence" | "template" | "text";
-  start: Comment;
-  end: Comment;
-}
+import { CompiledUpdater } from "./updater";
 
 const compilers: Compiler[] = [];
 
 class Instance {
-  public attributes: Record<number, InstanceAttribute>;
-  public values: Record<number, InstanceValue>;
+  public updaters: Record<number, CompiledUpdater>;
 
   public template: Template;
   public fragment: DocumentFragment;
@@ -27,15 +15,13 @@ class Instance {
   private compiler: Compiler;
 
   public constructor(template: Template) {
-    this.attributes = {};
-    this.values = {};
+    this.updaters = {};
 
     this.template = template;
     this.compiler = this.getCompiler(this.template);
     this.fragment = this.compiler.fragment.cloneNode(true) as DocumentFragment;
 
-    this.instantiateAttributes();
-    this.instantiateValues();
+    this.instantiate();
   }
 
   private getCompiler(template: Template): Compiler {
@@ -51,68 +37,30 @@ class Instance {
     return compiler;
   }
 
-  private matchAttribute(
-    attribute: string
-  ): { kind: "event" | "toggle" | "value"; name: string } {
-    const eventMatches = attribute.match(/^@(.+)$/);
-    const toggleMatches = attribute.match(/^(.+)\?$/);
+  private instantiate(): void {
+    const targets = new Set<Element>();
 
-    if (eventMatches !== null && toggleMatches !== null) {
-      throw new Error("attribute kind cannot be both event and toggle");
-    }
+    for (const key in this.compiler.updaters) {
+      const { id, base } = this.compiler.updaters[key];
+      const target = this.fragment.querySelector(
+        `[data-fluid-id="${id}"]`
+      ) as Element;
 
-    if (eventMatches !== null) {
-      return { kind: "event", name: eventMatches[1] };
-    } else if (toggleMatches !== null) {
-      return { kind: "toggle", name: toggleMatches[1] };
-    } else {
-      return { kind: "value", name: attribute };
-    }
-  }
+      let node: Node;
 
-  private instantiateAttributes(): void {
-    for (const key in this.compiler.attributes) {
-      const { elementId, attribute } = this.compiler.attributes[key];
-      const { kind, name } = this.matchAttribute(attribute);
-      const element = this.fragment.querySelector(
-        `[data-fluid-id="${elementId}"]`
-      );
-
-      if (element === null) {
-        throw new Error("cached fragment missing element");
+      if (target?.hasAttribute("data-fluid-replace")) {
+        node = new Comment();
+        target?.replaceWith(node);
+      } else {
+        node = target;
+        targets.add(target);
       }
 
-      this.attributes[key] = { kind, element, name };
+      this.updaters[key] = base(node);
     }
 
-    for (const { element } of Object.values(this.attributes)) {
-      element.removeAttribute("data-fluid-id");
-    }
-  }
-
-  private matchValue(value: unknown): "sequence" | "template" | "text" {
-    if (Array.isArray(value)) {
-      return "sequence";
-    } else if (value instanceof Template) {
-      return "template";
-    } else {
-      return "text";
-    }
-  }
-
-  private instantiateValues(): void {
-    for (const key in this.compiler.values) {
-      const { nodeId } = this.compiler.values[key];
-      const kind = this.matchValue(this.template.values[key]);
-
-      const start = new Comment();
-      const end = new Comment();
-
-      this.fragment
-        .querySelector(`[data-fluid-id="${nodeId}"`)
-        ?.replaceWith(start, end);
-
-      this.values[key] = { kind, start, end };
+    for (const target of targets) {
+      target.removeAttribute("data-fluid-id");
     }
   }
 }
