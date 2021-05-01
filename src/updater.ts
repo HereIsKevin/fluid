@@ -13,7 +13,7 @@ import { renderSequence, renderTemplate } from "./render";
 import { Template } from "./template";
 
 type BaseUpdater = (node: Node) => CompiledUpdater;
-type CompiledUpdater = (oldValue: unknown, newValue: unknown) => void;
+type CompiledUpdater = (value: unknown) => void;
 
 function eventUpdater(name: string): BaseUpdater {
   return (node) => {
@@ -21,12 +21,15 @@ function eventUpdater(name: string): BaseUpdater {
       throw new Error("can only bind event updater to element");
     }
 
-    return (oldValue, newValue) => {
-      if (typeof oldValue !== "undefined") {
-        node.removeEventListener(name, oldValue as EventListener);
+    let last: EventListener | undefined;
+
+    return (value) => {
+      if (typeof last !== "undefined") {
+        node.removeEventListener(name, last);
       }
 
-      node.addEventListener(name, newValue as EventListener);
+      last = value as EventListener;
+      node.addEventListener(name, last);
     };
   };
 }
@@ -37,8 +40,8 @@ function toggleUpdater(name: string): BaseUpdater {
       throw new Error("can only toggle event updater to element");
     }
 
-    return (oldValue, newValue) => {
-      if (newValue) {
+    return (value) => {
+      if (value) {
         node.setAttribute(name, "");
       } else {
         node.removeAttribute(name);
@@ -53,8 +56,8 @@ function attributeUpdater(name: string): BaseUpdater {
       throw new Error("can only bind attribute updater to element");
     }
 
-    return (oldValue, newValue) => {
-      node.setAttribute(name, String(newValue));
+    return (value) => {
+      node.setAttribute(name, String(value));
     };
   };
 }
@@ -66,8 +69,8 @@ function sequenceUpdater(): BaseUpdater {
 
     (node as ChildNode).replaceWith(start, end);
 
-    return (oldValue, newValue) => {
-      renderSequence(start, end, newValue as Template[]);
+    return (value) => {
+      renderSequence(start, end, value as Template[]);
     };
   };
 }
@@ -79,8 +82,8 @@ function templateUpdater(): BaseUpdater {
 
     (node as ChildNode).replaceWith(start, end);
 
-    return (oldValue, newValue) => {
-      renderTemplate(start, end, newValue as Template);
+    return (value) => {
+      renderTemplate(start, end, value as Template);
     };
   };
 }
@@ -91,8 +94,8 @@ function textUpdater(): BaseUpdater {
 
     (node as ChildNode).replaceWith(text);
 
-    return (oldValue, newValue) => {
-      text.nodeValue = String(newValue);
+    return (value) => {
+      text.nodeValue = String(value);
     };
   };
 }
