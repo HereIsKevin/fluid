@@ -1,19 +1,23 @@
-export { CompiledAttribute, CompiledValue, Compiler };
+export { Compiler, Updater };
 
 import { Template } from "./template";
+import {
+  BaseUpdater,
+  attributeUpdater,
+  eventUpdater,
+  sequenceUpdater,
+  templateUpdater,
+  textUpdater,
+  toggleUpdater,
+} from "./updater";
 
-interface CompiledAttribute {
-  elementId: string;
-  attribute: string;
-}
-
-interface CompiledValue {
-  nodeId: string;
+interface Updater {
+  id: string;
+  base: BaseUpdater;
 }
 
 class Compiler {
-  public attributes: Record<number, CompiledAttribute>;
-  public values: Record<number, CompiledValue>;
+  public updaters: Record<number, Updater>;
 
   public template: Template;
   public fragment: DocumentFragment;
@@ -21,8 +25,7 @@ class Compiler {
   private id: number;
 
   public constructor(template: Template) {
-    this.attributes = {};
-    this.values = {};
+    this.updaters = {};
 
     this.template = template;
     this.fragment = this.template.generate();
@@ -52,22 +55,32 @@ class Compiler {
   }
 
   private compileAttributes(element: Element): void {
-    let elementId: string | undefined;
-    const originalId = element.id;
+    let id: string | undefined;
 
     for (const attribute of element.getAttributeNames()) {
       const value = element.getAttribute(attribute) ?? "";
       const matches = value.match(/^<!--([0-9]+)-->$/);
 
       if (matches !== null) {
-        if (typeof elementId === "undefined") {
-          elementId = this.createId();
-          element.setAttribute("data-fluid-id", elementId);
+        if (typeof id === "undefined") {
+          id = this.createId();
+          element.setAttribute("data-fluid-id", id);
         }
 
         const index = Number(matches[1]);
 
-        this.attributes[index] = { elementId, attribute };
+        const eventMatches = attribute.match(/^@(.+)$/);
+        const toggleMatches = attribute.match(/^(.+)\?$/);
+
+        element.removeAttribute(attribute);
+
+        if (eventMatches !== null) {
+          this.updaters[index] = { id, base: eventUpdater(eventMatches[1]) };
+        } else if (toggleMatches !== null) {
+          this.updaters[index] = { id, base: toggleUpdater(toggleMatches[1]) };
+        } else {
+          this.updaters[index] = { id, base: attributeUpdater(attribute) };
+        }
 
         element.removeAttribute(attribute);
       }
@@ -95,12 +108,19 @@ class Compiler {
         const index = Number(matches[1]);
         const actual = this.template.values[index];
 
-        const nodeId = this.createId();
+        const id = this.createId();
         const node = document.createElement("span");
 
-        node.setAttribute("data-fluid-id", nodeId);
+        node.setAttribute("data-fluid-id", id);
+        node.setAttribute("data-fluid-replace", "");
 
-        this.values[index] = { nodeId };
+        if (Array.isArray(actual)) {
+          this.updaters[index] = { id, base: sequenceUpdater() };
+        } else if (actual instanceof Template) {
+          this.updaters[index] = { id, base: templateUpdater() };
+        } else {
+          this.updaters[index] = { id, base: textUpdater() };
+        }
 
         comment.replaceWith(node);
       }
