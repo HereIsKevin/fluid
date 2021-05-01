@@ -32,14 +32,17 @@ function renderSequence(
   endMarker: Comment,
   templates: Template[]
 ): void {
+  const sequence = sequences.get(startMarker);
+
   if (templates.length === 0) {
     clearNodes(startMarker, endMarker);
-    sequences.set(startMarker, []);
+
+    if (typeof sequence !== "undefined") {
+      sequence.length = 0;
+    }
 
     return;
   }
-
-  const sequence = sequences.get(startMarker);
 
   if (typeof sequence === "undefined" || sequence.length === 0) {
     const sequence: Sequence[] = [];
@@ -106,7 +109,7 @@ function renderTemplate(
       const updater = instance.updaters[index];
       const value = template.values[index];
 
-      updater(undefined, value);
+      updater(value);
     }
 
     caches.set(start, { template, updaters: instance.updaters });
@@ -121,7 +124,7 @@ function renderTemplate(
     if (oldValue !== newValue) {
       const updater = cache.updaters[index];
 
-      updater(oldValue, newValue);
+      updater(newValue);
     }
   }
 
