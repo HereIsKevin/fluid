@@ -12,12 +12,12 @@ import {
 } from "./updater";
 
 interface Updater {
-  id: string;
+  index: number;
   base: BaseUpdater;
 }
 
 class Compiler {
-  public updaters: Record<number, Updater>;
+  public updaters: Record<string, Updater[]>;
 
   public template: Template;
   public fragment: DocumentFragment;
@@ -35,7 +35,7 @@ class Compiler {
     this.compile(this.fragment);
   }
 
-  private createId(): string {
+  private getId(): string {
     const id = String(this.id);
     this.id++;
 
@@ -63,7 +63,9 @@ class Compiler {
 
       if (matches !== null) {
         if (typeof id === "undefined") {
-          id = this.createId();
+          id = this.getId();
+          this.updaters[id] = [];
+
           element.setAttribute("data-fluid-id", id);
         }
 
@@ -74,13 +76,17 @@ class Compiler {
 
         element.removeAttribute(attribute);
 
+        let base: BaseUpdater;
+
         if (eventMatches !== null) {
-          this.updaters[index] = { id, base: eventUpdater(eventMatches[1]) };
+          base = eventUpdater(eventMatches[1]);
         } else if (toggleMatches !== null) {
-          this.updaters[index] = { id, base: toggleUpdater(toggleMatches[1]) };
+          base = toggleUpdater(toggleMatches[1]);
         } else {
-          this.updaters[index] = { id, base: attributeUpdater(attribute) };
+          base = attributeUpdater(attribute);
         }
+
+        this.updaters[id].push({ index, base });
 
         element.removeAttribute(attribute);
       }
@@ -108,19 +114,22 @@ class Compiler {
         const index = Number(matches[1]);
         const actual = this.template.values[index];
 
-        const id = this.createId();
+        const id = this.getId();
         const node = document.createElement("span");
 
         node.setAttribute("data-fluid-id", id);
-        node.setAttribute("data-fluid-replace", "");
+
+        let base: BaseUpdater;
 
         if (Array.isArray(actual)) {
-          this.updaters[index] = { id, base: sequenceUpdater() };
+          base = sequenceUpdater();
         } else if (actual instanceof Template) {
-          this.updaters[index] = { id, base: templateUpdater() };
+          base = templateUpdater();
         } else {
-          this.updaters[index] = { id, base: textUpdater() };
+          base = textUpdater();
         }
+
+        this.updaters[id] = [{ index, base }];
 
         comment.replaceWith(node);
       }
