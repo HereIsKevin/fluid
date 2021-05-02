@@ -2,12 +2,12 @@ export { Instance };
 
 import { Compiler } from "./compiler";
 import { Template } from "./template";
-import { CompiledUpdater } from "./updater";
-
-const compilers: Compiler[] = [];
+import { BoundUpdater } from "./updater";
 
 class Instance {
-  public updaters: Record<number, CompiledUpdater>;
+  private static compilers: Compiler[] = [];
+
+  public updaters: Record<number, BoundUpdater>;
 
   public template: Template;
   public fragment: DocumentFragment;
@@ -25,41 +25,26 @@ class Instance {
   }
 
   private getCompiler(template: Template): Compiler {
-    for (const compiler of compilers) {
-      if (compiler.template.equalStrings(template)) {
+    for (const compiler of Instance.compilers) {
+      if (compiler.template.equals(template)) {
         return compiler;
       }
     }
 
     const compiler = new Compiler(template);
-    compilers.unshift(compiler);
+    Instance.compilers.push(compiler);
 
     return compiler;
   }
 
   private instantiate(): void {
-    const targets = new Set<Element>();
+    for (const target of this.fragment.querySelectorAll("[data-fluid-id]")) {
+      const id = Number(target.getAttribute("data-fluid-id"));
 
-    for (const key in this.compiler.updaters) {
-      const { id, base } = this.compiler.updaters[key];
-      const target = this.fragment.querySelector(
-        `[data-fluid-id="${id}"]`
-      ) as Element;
-
-      let node: Node;
-
-      if (target?.hasAttribute("data-fluid-replace")) {
-        node = new Comment();
-        target?.replaceWith(node);
-      } else {
-        node = target;
-        targets.add(target);
+      for (const { index, base } of this.compiler.updaters[id]) {
+        this.updaters[index] = base(target);
       }
 
-      this.updaters[key] = base(node);
-    }
-
-    for (const target of targets) {
       target.removeAttribute("data-fluid-id");
     }
   }
