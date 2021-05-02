@@ -1,6 +1,6 @@
 export {
   BaseUpdater,
-  CompiledUpdater,
+  BoundUpdater,
   attributeUpdater,
   eventUpdater,
   sequenceUpdater,
@@ -12,8 +12,8 @@ export {
 import { renderSequence, renderTemplate } from "./render";
 import { Template } from "./template";
 
-type BaseUpdater = (node: Node) => CompiledUpdater;
-type CompiledUpdater = (value: unknown) => void;
+type BaseUpdater = (node: Node) => BoundUpdater;
+type BoundUpdater = (value: unknown) => void;
 
 function eventUpdater(name: string): BaseUpdater {
   return (node) => {
@@ -37,7 +37,7 @@ function eventUpdater(name: string): BaseUpdater {
 function toggleUpdater(name: string): BaseUpdater {
   return (node) => {
     if (!(node instanceof Element)) {
-      throw new Error("can only toggle event updater to element");
+      throw new Error("can only bind toggle updater to element");
     }
 
     return (value) => {
