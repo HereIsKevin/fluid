@@ -9,7 +9,7 @@ class Template {
     this.values = values;
   }
 
-  public equalStrings(template: Template): boolean {
+  public equals(template: Template): boolean {
     if (this.strings.length !== template.strings.length) {
       return false;
     }
