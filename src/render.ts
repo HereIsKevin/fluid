@@ -2,21 +2,21 @@ export { renderSequence, renderTemplate, render };
 
 import { Instance } from "./instance";
 import { Template } from "./template";
-import { CompiledUpdater } from "./updater";
+import { BoundUpdater } from "./updater";
 
-interface Cache {
-  template: Template;
-  updaters: Record<number, CompiledUpdater>;
-}
-
-interface Sequence {
+interface Hole {
   start: Comment;
   end: Comment;
 }
 
-const rendered = new WeakMap<Element, Sequence>();
+interface Cache {
+  template: Template;
+  updaters: Record<number, BoundUpdater>;
+}
+
+const holes = new WeakMap<Element, Hole>();
 const caches = new WeakMap<Comment, Cache>();
-const sequences = new WeakMap<Comment, Sequence[]>();
+const sequences = new WeakMap<Comment, Hole[]>();
 
 function clearNodes(start: Node, end: Node): void {
   let current = start.nextSibling;
@@ -34,18 +34,8 @@ function renderSequence(
 ): void {
   const sequence = sequences.get(startMarker);
 
-  if (templates.length === 0) {
-    clearNodes(startMarker, endMarker);
-
-    if (typeof sequence !== "undefined") {
-      sequence.length = 0;
-    }
-
-    return;
-  }
-
   if (typeof sequence === "undefined" || sequence.length === 0) {
-    const sequence: Sequence[] = [];
+    const sequence: Hole[] = [];
 
     for (const template of templates) {
       const start = new Comment();
@@ -58,6 +48,16 @@ function renderSequence(
     }
 
     sequences.set(startMarker, sequence);
+
+    return;
+  }
+
+  if (templates.length === 0) {
+    clearNodes(startMarker, endMarker);
+
+    if (typeof sequence !== "undefined") {
+      sequence.length = 0;
+    }
 
     return;
   }
@@ -98,11 +98,10 @@ function renderTemplate(
 ): void {
   const cache = caches.get(start);
 
-  if (typeof cache === "undefined" || !cache.template.equalStrings(template)) {
-    clearNodes(start, end);
-
+  if (typeof cache === "undefined" || !cache.template.equals(template)) {
     const instance = new Instance(template);
 
+    clearNodes(start, end);
     start.after(instance.fragment);
 
     for (let index = 0; index < template.values.length; index++) {
@@ -132,18 +131,17 @@ function renderTemplate(
 }
 
 function render(target: Element, template: Template): void {
-  let result = rendered.get(target);
+  let hole = holes.get(target);
 
-  if (typeof result === "undefined") {
+  if (typeof hole === "undefined") {
     const start = new Comment();
     const end = new Comment();
 
     target.append(start, end);
+    hole = { start, end };
 
-    result = { start, end };
-
-    rendered.set(target, result);
+    holes.set(target, hole);
   }
 
-  renderTemplate(result.start, result.end, template);
+  renderTemplate(hole.start, hole.end, template);
 }
