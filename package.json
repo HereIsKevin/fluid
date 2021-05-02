@@ -1,6 +1,6 @@
 {
   "name": "@hereiskevin/fluid",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Simple, lightweight, and blazing fast UI library",
   "type": "module",
   "exports": "./dist/index.js",
@@ -47,7 +47,7 @@
     "eslint": "^7.25.0",
     "npm-run-all": "^4.1.5",
     "prettier": "^2.2.1",
-    "rollup": "^2.45.2",
+    "rollup": "^2.46.0",
     "shx": "^0.3.3",
     "terser": "^5.7.0",
     "typescript": "^4.2.4"
