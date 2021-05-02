@@ -29,7 +29,7 @@ Fluid has a tiny API with only two exported functions, `html` and `render`.
 
 ### `html(strings, ...values)`
 
-Create a new template for Fluid. Once rendered, the types of each of the interpolated values may not change.
+Create a new template for Fluid. Once rendered, the types of each of the interpolated values may not change. Note that this caveat applies to **all templates with identical strings**.
 
 #### Arguments
 
