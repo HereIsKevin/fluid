@@ -5,6 +5,7 @@ import {
   BaseUpdater,
   attributeUpdater,
   eventUpdater,
+  propertyUpdater,
   sequenceUpdater,
   templateUpdater,
   textUpdater,
@@ -73,6 +74,7 @@ class Compiler {
 
         const eventMatches = attribute.match(/^@(.+)$/);
         const toggleMatches = attribute.match(/^(.+)\?$/);
+        const propertyMatches = attribute.match(/^\.(.+)$/);
 
         element.removeAttribute(attribute);
 
@@ -82,6 +84,8 @@ class Compiler {
           base = eventUpdater(eventMatches[1]);
         } else if (toggleMatches !== null) {
           base = toggleUpdater(toggleMatches[1]);
+        } else if (propertyMatches !== null) {
+          base = propertyUpdater(propertyMatches[1]);
         } else {
           base = attributeUpdater(attribute);
         }
