@@ -3,6 +3,7 @@ export {
   BoundUpdater,
   attributeUpdater,
   eventUpdater,
+  propertyUpdater,
   sequenceUpdater,
   templateUpdater,
   textUpdater,
@@ -46,6 +47,18 @@ function toggleUpdater(name: string): BaseUpdater {
       } else {
         node.removeAttribute(name);
       }
+    };
+  };
+}
+
+function propertyUpdater(name: string): BaseUpdater {
+  return (node) => {
+    if (!(node instanceof Element)) {
+      throw new Error("can only bind property updater to element");
+    }
+
+    return (value) => {
+      Reflect.set(node, name, value);
     };
   };
 }
