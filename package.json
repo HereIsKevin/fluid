@@ -6,9 +6,7 @@
   "exports": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "clean:build": "shx rm -rf ./build/",
-    "clean:dist": "shx rm -rf ./dist/",
-    "clean": "npm-run-all --parallel clean:build clean:dist",
+    "clean": "shx rm -rf ./build/ ./dist/",
     "watch:tsc": "tsc --watch",
     "watch:rollup": "rollup --watch --silent --config ./rollup.config.js",
     "watch": "npm-run-all --parallel watch:tsc watch:rollup",
