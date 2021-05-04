@@ -6,7 +6,9 @@ import {
   attributeUpdater,
   eventUpdater,
   propertyUpdater,
+  referenceUpdater,
   sequenceUpdater,
+  styleUpdater,
   templateUpdater,
   textUpdater,
   toggleUpdater,
@@ -86,6 +88,10 @@ class Compiler {
           base = toggleUpdater(toggleMatches[1]);
         } else if (propertyMatches !== null) {
           base = propertyUpdater(propertyMatches[1]);
+        } else if (attribute === "ref") {
+          base = referenceUpdater();
+        } else if (attribute === "style") {
+          base = styleUpdater();
         } else {
           base = attributeUpdater(attribute);
         }
