@@ -91,7 +91,11 @@ class Compiler {
         } else if (attribute === "ref") {
           base = referenceUpdater();
         } else if (attribute === "style") {
-          base = styleUpdater();
+          if (typeof this.template.values[index] === "string") {
+            base = attributeUpdater("style");
+          } else {
+            base = styleUpdater();
+          }
         } else {
           base = attributeUpdater(attribute);
         }

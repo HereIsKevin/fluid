@@ -83,26 +83,22 @@ function styleUpdater(): BaseUpdater {
       throw new Error("can only bind style updater to element");
     }
 
-    let oldValues: Record<string, string> = {};
+    let oldValues: Record<string, unknown> = {};
 
     return (value) => {
-      if (typeof value === "string") {
-        node.setAttribute("style", String(value));
-      } else {
-        const element = node as HTMLElement;
-        const values = value as Record<string, string>;
+      const element = node as HTMLElement;
+      const values = value as Record<string, unknown>;
 
-        for (const key in values) {
-          const oldValue = oldValues[key];
-          const newValue = values[key];
+      for (const key in values) {
+        const oldValue = oldValues[key];
+        const newValue = values[key];
 
-          if (oldValue !== newValue) {
-            Reflect.set(element.style, key, newValue);
-          }
+        if (oldValue !== newValue) {
+          Reflect.set(element.style, key, newValue);
         }
-
-        oldValues = values;
       }
+
+      oldValues = values;
     };
   };
 }
