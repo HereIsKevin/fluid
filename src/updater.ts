@@ -4,7 +4,9 @@ export {
   attributeUpdater,
   eventUpdater,
   propertyUpdater,
+  referenceUpdater,
   sequenceUpdater,
+  styleUpdater,
   templateUpdater,
   textUpdater,
   toggleUpdater,
@@ -59,6 +61,48 @@ function propertyUpdater(name: string): BaseUpdater {
 
     return (value) => {
       Reflect.set(node, name, value);
+    };
+  };
+}
+
+function referenceUpdater(): BaseUpdater {
+  return (node) => {
+    if (!(node instanceof Element)) {
+      throw new Error("can only bind reference updater to element");
+    }
+
+    return (value) => {
+      (value as (node: Node) => void)(node);
+    };
+  };
+}
+
+function styleUpdater(): BaseUpdater {
+  return (node) => {
+    if (!(node instanceof Element)) {
+      throw new Error("can only bind style updater to element");
+    }
+
+    let oldValues: Record<string, string> = {};
+
+    return (value) => {
+      if (typeof value === "string") {
+        node.setAttribute("style", String(value));
+      } else {
+        const element = node as HTMLElement;
+        const values = value as Record<string, string>;
+
+        for (const key in values) {
+          const oldValue = oldValues[key];
+          const newValue = values[key];
+
+          if (oldValue !== newValue) {
+            Reflect.set(element.style, key, newValue);
+          }
+        }
+
+        oldValues = values;
+      }
     };
   };
 }
