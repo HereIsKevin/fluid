@@ -1,10 +1,25 @@
-export { renderSequence, renderTemplate, render };
+export {
+  Arrangement,
+  renderArrangement,
+  renderSequence,
+  renderTemplate,
+  render,
+};
 
 import { Instance } from "./instance";
 import { Template } from "./template";
 import { BoundUpdater } from "./updater";
 
+type Key = string | number;
+type Arrangement = [Key, Template];
+
 interface Hole {
+  start: Comment;
+  end: Comment;
+}
+
+interface Burrow {
+  key: Key;
   start: Comment;
   end: Comment;
 }
@@ -15,6 +30,7 @@ interface Cache {
 }
 
 const holes = new WeakMap<Element, Hole>();
+const burrows = new WeakMap<Comment, Burrow[]>();
 const caches = new WeakMap<Comment, Cache>();
 const sequences = new WeakMap<Comment, Hole[]>();
 
@@ -24,6 +40,140 @@ function clearNodes(start: Node, end: Node): void {
   while (current !== null && current !== end) {
     current.remove();
     current = start.nextSibling;
+  }
+}
+
+function takeNodes(start: Node, end: Node): Node[] {
+  const nodes: Node[] = [start];
+
+  let current = start.nextSibling;
+
+  while (current !== null && current !== end) {
+    current.remove();
+    nodes.push(current);
+
+    current = start.nextSibling;
+  }
+
+  nodes.push(end);
+
+  (start as ChildNode).remove();
+  (end as ChildNode).remove();
+
+  return nodes;
+}
+
+function renderArrangement(
+  startMarker: Comment,
+  endMarker: Comment,
+  arrangements: Arrangement[]
+): void {
+  const burrow = burrows.get(startMarker);
+
+  if (typeof burrow === "undefined" || burrow.length === 0) {
+    const burrow: Burrow[] = [];
+
+    for (const [key, template] of arrangements) {
+      const start = new Comment();
+      const end = new Comment();
+
+      endMarker.before(start, end);
+      renderTemplate(start, end, template);
+
+      burrow.push({ key, start, end });
+    }
+
+    burrows.set(startMarker, burrow);
+
+    return;
+  }
+
+  if (arrangements.length === 0) {
+    clearNodes(startMarker, endMarker);
+
+    if (typeof burrow !== "undefined") {
+      burrow.length = 0;
+    }
+
+    return;
+  }
+
+  const oldKeys = burrow.map((value) => value.key);
+  const newKeys = arrangements.map((value) => value[0]);
+
+  let oldIndex = 0;
+  let newIndex = 0;
+
+  while (oldIndex <= oldKeys.length && newIndex <= newKeys.length) {
+    const oldKey = oldKeys[oldIndex];
+    const newKey = newKeys[newIndex];
+
+    if (oldKey === newKey) {
+      // same
+
+      console.log("same", oldIndex, newIndex);
+
+      if (
+        typeof burrow[oldIndex] === "undefined" ||
+        typeof arrangements[newIndex] === "undefined"
+      ) {
+        break;
+      }
+
+      const { start, end } = burrow[oldIndex];
+      const template = arrangements[newIndex][1];
+
+      renderTemplate(start, end, template);
+
+      oldIndex++;
+      newIndex++;
+    } else {
+      const newPosition = newKeys.indexOf(oldKey);
+
+      if (newPosition === -1) {
+        // remove
+
+        console.log("remove", oldIndex);
+
+        const { start, end } = burrow[oldIndex];
+
+        clearNodes(start, end);
+
+        start.remove();
+        end.remove();
+
+        oldKeys.splice(oldIndex, 1);
+        burrow.splice(oldIndex, 1);
+      }
+      // else if (typeof oldKey !== "undefined" && newPosition !== oldIndex) {
+      //   // swap
+
+      //   console.log("swap", oldIndex, newPosition);
+
+      //   const { start, end } = burrow[oldIndex];
+      //   const nodes = takeNodes(start, end);
+      //   const marker = burrow[newPosition + 1]?.start ?? endMarker;
+
+      //   marker.before(...nodes);
+
+      //   oldKeys.splice(newPosition, 0, oldKeys.splice(oldIndex, 1)[0]);
+      //   burrow.splice(newPosition, 0, burrow.splice(oldIndex, 1)[0]);
+      // }
+      else {
+        // insertion
+
+        console.log("insert", newIndex);
+
+        const start = new Comment();
+        const end = new Comment();
+        const marker = burrow[newIndex + 1]?.start ?? endMarker;
+
+        marker.before(start, end);
+
+        oldKeys.splice(newIndex, 0, newKey);
+        burrow.splice(newIndex, 0, { key: newKey, start, end });
+      }
+    }
   }
 }
 
