@@ -12,7 +12,12 @@ export {
   toggleUpdater,
 };
 
-import { renderSequence, renderTemplate } from "./render";
+import {
+  Arrangement,
+  renderArrangement,
+  renderSequence,
+  renderTemplate,
+} from "./render";
 import { Template } from "./template";
 
 type BaseUpdater = (node: Node) => BoundUpdater;
@@ -122,8 +127,18 @@ function sequenceUpdater(): BaseUpdater {
 
     (node as ChildNode).replaceWith(start, end);
 
+    let keyed: boolean | undefined;
+
     return (value) => {
-      renderSequence(start, end, value as Template[]);
+      if (typeof keyed === "undefined") {
+        keyed = Array.isArray((value as unknown[])[0]);
+      }
+
+      if (keyed) {
+        renderArrangement(start, end, value as Arrangement[]);
+      } else {
+        renderSequence(start, end, value as Template[]);
+      }
     };
   };
 }
