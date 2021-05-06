@@ -3,7 +3,7 @@
 Fluid is an user interface library for the web.
 
 - **Simple:** Tiny API with **only two functions**, `html` and `render`
-- **Lightweight:** Under **1.5 KB** minified and gzipped
+- **Lightweight:** Under **2 KB** minified and gzipped
 - **Friendly:** No compilation or build step needed, **just import and run**
 - **Blazing Fast:** Updates only what has changed **without virtual DOM**
 - **Flexible:** No assumptions about anything, **just a simple library**
@@ -47,19 +47,48 @@ const inner = (hidden, style) =>
   html`
     <div hidden?="${hidden}" style="${style}">
       By adding "?" to the end of an attribute, it is toggled whenever its value
-      is true. Attributes can be interpolated with "${value}".
+      is true. Attributes can be interpolated with "${value}". Style attributes
+      can take an object of properties instead, which will result in style
+      diffing. Note that switching between objects and strings for style
+      attributes will result in unexpected behavior.
+    </div>
+    <div ref="${(node) => setValue("paragraph", node)}">
+      Reference attributes named "ref" can be used to get references to actual
+      nodes. The function passed as the value for the attribute will be called
+      when needed with the node passed as an argument.
+    </div>
+    <div>
+      <input .value="${value}" />
+      By adding "." to the beginning of an attribute, the property on the
+      element will be set to the passed value.
     </div>
   `;
 
 const template = (inner) =>
   html`
     <div @click="${() => alert("Event!")}">
-      ${inner} By adding "@" to the beginning of an attribute, its value is set
-      to be the event handler for the event name in the attribute. Strings,
-      templates, or arrays of templates can be interpolated within elements.
-      Strings are interpolated as text nodes. Templates are directly inserted
-      and are removed when their static strings change. Arrays of templates are
-      also directly inserted, but their static strings MAY NOT change.
+      ${inner}
+      By adding "@" to the beginning of an attribute, its value is set to be the
+      event handler for the event name in the attribute. Strings or templates
+      can be interpolated within elements. Strings are interpolated as text
+      nodes. Templates are directly inserted and are removed when their static
+      strings change.
+    </div>
+    <div>
+      ${values.map((value) => inner(value.hidden, value.style))}
+      Arrays of templates can also be interpolated. When rendered, they will be
+      rendered as non-keyed, meaning that Fluid is free to reuse and move
+      templates around. This is not suggested for stateful elements like input
+      elements. Most of the time, this is going to be faster, but it will be
+      slower for removals or insertions in between existing templates.
+    </div>
+    <div>
+      ${values.map((value) => [value.id, inner(value.hidden, value.style)])}
+      Arrays of keys with templates can also be interpolated. When rendered,
+      they will be rendered as keyed, meaning that Fluid will reorder and move
+      elements based on their keys. This is suggested for stateful elements like
+      input. This will be faster for removals and insertions in between existing
+      templates and slightly slower for most other things.
     </div>
   `;
 ```
