@@ -130,8 +130,12 @@ function sequenceUpdater(): BaseUpdater {
     let keyed: boolean | undefined;
 
     return (value) => {
-      if (typeof keyed === "undefined") {
-        keyed = Array.isArray((value as unknown[])[0]);
+      if (
+        typeof keyed === "undefined" &&
+        Array.isArray(value) &&
+        value.length > 0
+      ) {
+        keyed = Array.isArray(value[0]);
       }
 
       if (keyed) {
