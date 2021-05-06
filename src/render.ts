@@ -43,26 +43,6 @@ function clearNodes(start: Node, end: Node): void {
   }
 }
 
-function takeNodes(start: Node, end: Node): Node[] {
-  const nodes: Node[] = [start];
-
-  let current = start.nextSibling;
-
-  while (current !== null && current !== end) {
-    current.remove();
-    nodes.push(current);
-
-    current = start.nextSibling;
-  }
-
-  nodes.push(end);
-
-  (start as ChildNode).remove();
-  (end as ChildNode).remove();
-
-  return nodes;
-}
-
 function renderArrangement(
   startMarker: Comment,
   endMarker: Comment,
@@ -104,9 +84,13 @@ function renderArrangement(
   let oldIndex = 0;
   let newIndex = 0;
 
-  while (oldIndex <= burrow.length && newIndex <= arrangements.length) {
+  while (oldIndex <= oldKeys.length && newIndex <= newKeys.length) {
     const oldKey = oldKeys[oldIndex];
     const newKey = newKeys[newIndex];
+
+    if (typeof oldKey === "undefined" && typeof newKey === "undefined") {
+      break;
+    }
 
     if (oldKey === newKey) {
       const { start, end } = burrow[oldIndex];
@@ -116,20 +100,8 @@ function renderArrangement(
 
       oldIndex++;
       newIndex++;
-    } else if (newKeys.includes(oldKey)) {
-      const index = newKeys.indexOf(oldKey)
-      const key = oldKeys.splice(oldIndex, 1)[0];
-
-      const marker = burrow[index + 1]?.start ?? endMarker;
-      const { start, end } = burrow.splice(oldIndex, 1)[0];
-      const nodes = takeNodes(start, end);
-
-      marker.before(...nodes);
-      burrow.splice(index, 0, { key, start, end });
-
-      oldKeys.splice(index, 0, key);
-    } else if (!oldKeys.includes(newKey)) {
-      const marker = burrow[oldIndex + 1]?.start ?? endMarker;
+    } else if (oldKeys.length < newKeys.length) {
+      const marker = burrow[oldIndex]?.start ?? endMarker;
       const start = new Comment();
       const end = new Comment();
 
