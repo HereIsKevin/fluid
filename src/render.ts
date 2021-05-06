@@ -104,22 +104,11 @@ function renderArrangement(
   let oldIndex = 0;
   let newIndex = 0;
 
-  while (oldIndex <= oldKeys.length && newIndex <= newKeys.length) {
+  while (oldIndex <= burrow.length && newIndex <= arrangements.length) {
     const oldKey = oldKeys[oldIndex];
     const newKey = newKeys[newIndex];
 
     if (oldKey === newKey) {
-      // same
-
-      console.log("same", oldIndex, newIndex);
-
-      if (
-        typeof burrow[oldIndex] === "undefined" ||
-        typeof arrangements[newIndex] === "undefined"
-      ) {
-        break;
-      }
-
       const { start, end } = burrow[oldIndex];
       const template = arrangements[newIndex][1];
 
@@ -127,52 +116,36 @@ function renderArrangement(
 
       oldIndex++;
       newIndex++;
+    } else if (newKeys.includes(oldKey)) {
+      const index = newKeys.indexOf(oldKey)
+      const key = oldKeys.splice(oldIndex, 1)[0];
+
+      const marker = burrow[index + 1]?.start ?? endMarker;
+      const { start, end } = burrow.splice(oldIndex, 1)[0];
+      const nodes = takeNodes(start, end);
+
+      marker.before(...nodes);
+      burrow.splice(index, 0, { key, start, end });
+
+      oldKeys.splice(index, 0, key);
+    } else if (!oldKeys.includes(newKey)) {
+      const marker = burrow[oldIndex + 1]?.start ?? endMarker;
+      const start = new Comment();
+      const end = new Comment();
+
+      marker.before(start, end);
+      burrow.splice(oldIndex, 0, { key: newKey, start, end });
+
+      oldKeys.splice(oldIndex, 0, newKey);
     } else {
-      const newPosition = newKeys.indexOf(oldKey);
+      const { start, end } = burrow.splice(oldIndex, 1)[0];
 
-      if (newPosition === -1) {
-        // remove
+      clearNodes(start, end);
 
-        console.log("remove", oldIndex);
+      start.remove();
+      end.remove();
 
-        const { start, end } = burrow[oldIndex];
-
-        clearNodes(start, end);
-
-        start.remove();
-        end.remove();
-
-        oldKeys.splice(oldIndex, 1);
-        burrow.splice(oldIndex, 1);
-      }
-      // else if (typeof oldKey !== "undefined" && newPosition !== oldIndex) {
-      //   // swap
-
-      //   console.log("swap", oldIndex, newPosition);
-
-      //   const { start, end } = burrow[oldIndex];
-      //   const nodes = takeNodes(start, end);
-      //   const marker = burrow[newPosition + 1]?.start ?? endMarker;
-
-      //   marker.before(...nodes);
-
-      //   oldKeys.splice(newPosition, 0, oldKeys.splice(oldIndex, 1)[0]);
-      //   burrow.splice(newPosition, 0, burrow.splice(oldIndex, 1)[0]);
-      // }
-      else {
-        // insertion
-
-        console.log("insert", newIndex);
-
-        const start = new Comment();
-        const end = new Comment();
-        const marker = burrow[newIndex + 1]?.start ?? endMarker;
-
-        marker.before(start, end);
-
-        oldKeys.splice(newIndex, 0, newKey);
-        burrow.splice(newIndex, 0, { key: newKey, start, end });
-      }
+      oldKeys.splice(oldIndex, 1);
     }
   }
 }
