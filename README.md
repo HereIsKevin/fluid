@@ -66,24 +66,24 @@ const inner = (hidden, style) =>
 
 const template = (inner) =>
   html`
+    ${inner}
     <div @click="${() => alert("Event!")}">
-      ${inner}
       By adding "@" to the beginning of an attribute, its value is set to be the
       event handler for the event name in the attribute. Strings or templates
       can be interpolated within elements. Strings are interpolated as text
       nodes. Templates are directly inserted and are removed when their static
       strings change.
     </div>
+    ${values.map((value) => inner(value.hidden, value.style))}
     <div>
-      ${values.map((value) => inner(value.hidden, value.style))}
       Arrays of templates can also be interpolated. When rendered, they will be
       rendered as non-keyed, meaning that Fluid is free to reuse and move
       templates around. This is not suggested for stateful elements like input
       elements. Most of the time, this is going to be faster, but it will be
       slower for removals or insertions in between existing templates.
     </div>
+    ${values.map((value) => [value.id, inner(value.hidden, value.style)])}
     <div>
-      ${values.map((value) => [value.id, inner(value.hidden, value.style)])}
       Arrays of keys with templates can also be interpolated. When rendered,
       they will be rendered as keyed, meaning that Fluid will reorder and move
       elements based on their keys. This is suggested for stateful elements like
