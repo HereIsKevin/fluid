@@ -136,7 +136,7 @@ Fluid is the fastest library of its kind, even faster than lighterhtml and lit-H
   <img
     src="./benchmarks/non_keyed.png"
     alt="Fluid Non-Keyed Benchmarks"
-    height="855px"
+    width="710px"
   />
 </p>
 
@@ -146,7 +146,7 @@ Fluid is the fastest library of its kind, even faster than lighterhtml and lit-H
   <img
     src="./benchmarks/keyed.png"
     alt="Fluid Keyed Benchmarks"
-    height="885px"
+    width="710px"
   />
 </p>
 
