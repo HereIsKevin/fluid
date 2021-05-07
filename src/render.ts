@@ -43,6 +43,26 @@ function clearNodes(start: Node, end: Node): void {
   }
 }
 
+function takeNodes(start: Node, end: Node): Node[] {
+  const nodes = [start];
+
+  let current = start.nextSibling;
+
+  while (current !== null && current !== end) {
+    nodes.push(current);
+    current.remove();
+
+    current = start.nextSibling;
+  }
+
+  nodes.push(end);
+
+  (start as ChildNode).remove();
+  (end as ChildNode).remove();
+
+  return nodes;
+}
+
 function renderArrangement(
   startMarker: Comment,
   endMarker: Comment,
@@ -78,46 +98,66 @@ function renderArrangement(
     return;
   }
 
+  const cache: Record<Key, Node[] | undefined> = {};
+
   const oldKeys = burrow.map((value) => value.key);
   const newKeys = arrangements.map((value) => value[0]);
 
-  let oldIndex = 0;
-  let newIndex = 0;
+  let index = 0;
 
-  while (oldIndex <= oldKeys.length && newIndex <= newKeys.length) {
-    const oldKey = oldKeys[oldIndex];
-    const newKey = newKeys[newIndex];
+  while (index <= oldKeys.length && index <= newKeys.length) {
+    const oldKey = oldKeys[index];
+    const newKey = newKeys[index];
 
     if (typeof oldKey === "undefined" && typeof newKey === "undefined") {
       break;
     }
 
     if (oldKey === newKey) {
-      const { start, end } = burrow[oldIndex];
-      const template = arrangements[newIndex][1];
+      const { start, end } = burrow[index];
+      const template = arrangements[index][1];
 
       renderTemplate(start, end, template);
 
-      oldIndex++;
-      newIndex++;
+      index++;
     } else if (oldKeys.length < newKeys.length) {
-      const marker = burrow[oldIndex]?.start ?? endMarker;
-      const start = new Comment();
-      const end = new Comment();
+      const marker = burrow[index]?.start ?? endMarker;
+      const cached = cache[newKey];
 
-      marker.before(start, end);
-      burrow.splice(oldIndex, 0, { key: newKey, start, end });
+      if (typeof cached !== "undefined") {
+        marker.before(...cached);
+        oldKeys.splice(index, 0, newKey);
+        burrow.splice(index, 0, {
+          key: newKey,
+          start: cached[0] as Comment,
+          end: cached[cached.length - 1] as Comment,
+        });
 
-      oldKeys.splice(oldIndex, 0, newKey);
+        cache[newKey] = undefined;
+      } else {
+        const position = oldKeys.indexOf(newKey);
+
+        if (position !== -1) {
+          const { start, end } = burrow[position];
+          const nodes = takeNodes(start, end);
+
+          marker.before(...nodes);
+          burrow.splice(index, 0, burrow.splice(position, 1)[0]);
+          oldKeys.splice(index, 0, oldKeys.splice(position, 1)[0]);
+        } else {
+          const start = new Comment();
+          const end = new Comment();
+
+          marker.before(start, end);
+          oldKeys.splice(index, 0, newKey);
+          burrow.splice(index, 0, { key: newKey, start, end });
+        }
+      }
     } else {
-      const { start, end } = burrow.splice(oldIndex, 1)[0];
+      const { start, end } = burrow.splice(index, 1)[0];
+      cache[oldKey] = takeNodes(start, end);
 
-      clearNodes(start, end);
-
-      start.remove();
-      end.remove();
-
-      oldKeys.splice(oldIndex, 1);
+      oldKeys.splice(index, 1);
     }
   }
 }
