@@ -25,10 +25,6 @@ type BoundUpdater = (value: unknown) => void;
 
 function eventUpdater(name: string): BaseUpdater {
   return (node) => {
-    if (!(node instanceof Element)) {
-      throw new Error("can only bind event updater to element");
-    }
-
     let last: EventListener | undefined;
 
     return (value) => {
@@ -44,15 +40,11 @@ function eventUpdater(name: string): BaseUpdater {
 
 function toggleUpdater(name: string): BaseUpdater {
   return (node) => {
-    if (!(node instanceof Element)) {
-      throw new Error("can only bind toggle updater to element");
-    }
-
     return (value) => {
       if (value) {
-        node.setAttribute(name, "");
+        (node as Element).setAttribute(name, "");
       } else {
-        node.removeAttribute(name);
+        (node as Element).removeAttribute(name);
       }
     };
   };
@@ -60,10 +52,6 @@ function toggleUpdater(name: string): BaseUpdater {
 
 function propertyUpdater(name: string): BaseUpdater {
   return (node) => {
-    if (!(node instanceof Element)) {
-      throw new Error("can only bind property updater to element");
-    }
-
     return (value) => {
       Reflect.set(node, name, value);
     };
@@ -72,10 +60,6 @@ function propertyUpdater(name: string): BaseUpdater {
 
 function referenceUpdater(): BaseUpdater {
   return (node) => {
-    if (!(node instanceof Element)) {
-      throw new Error("can only bind reference updater to element");
-    }
-
     return (value) => {
       (value as (node: Node) => void)(node);
     };
@@ -84,10 +68,6 @@ function referenceUpdater(): BaseUpdater {
 
 function styleUpdater(): BaseUpdater {
   return (node) => {
-    if (!(node instanceof Element)) {
-      throw new Error("can only bind style updater to element");
-    }
-
     let oldValues: Record<string, unknown> = {};
 
     return (value) => {
@@ -110,12 +90,8 @@ function styleUpdater(): BaseUpdater {
 
 function attributeUpdater(name: string): BaseUpdater {
   return (node) => {
-    if (!(node instanceof Element)) {
-      throw new Error("can only bind attribute updater to element");
-    }
-
     return (value) => {
-      node.setAttribute(name, String(value));
+      (node as Element).setAttribute(name, String(value));
     };
   };
 }
