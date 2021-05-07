@@ -1,4 +1,6 @@
+benchmarks/
 build/
+src/
 .eslintrc.cjs
 .prettierrc.json
 rollup.config.js
