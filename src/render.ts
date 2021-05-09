@@ -103,6 +103,8 @@ function renderArrangement(
   const oldKeys = burrow.map((value) => value.key);
   const newKeys = arrangements.map((value) => value[0]);
 
+  const oldMap = new Set(oldKeys);
+
   let index = 0;
 
   while (index <= oldKeys.length && index <= newKeys.length) {
@@ -133,31 +135,33 @@ function renderArrangement(
           end: cached[cached.length - 1] as Comment,
         });
 
+        oldMap.add(newKey);
+
         cache[newKey] = undefined;
-      } else {
+      } else if (oldMap.has(newKey)) {
         const position = oldKeys.indexOf(newKey);
+        const { start, end } = burrow[position];
+        const nodes = takeNodes(start, end);
 
-        if (position !== -1) {
-          const { start, end } = burrow[position];
-          const nodes = takeNodes(start, end);
+        marker.before(...nodes);
+        burrow.splice(index, 0, burrow.splice(position, 1)[0]);
+        oldKeys.splice(index, 0, oldKeys.splice(position, 1)[0]);
+      } else {
+        const start = new Comment();
+        const end = new Comment();
 
-          marker.before(...nodes);
-          burrow.splice(index, 0, burrow.splice(position, 1)[0]);
-          oldKeys.splice(index, 0, oldKeys.splice(position, 1)[0]);
-        } else {
-          const start = new Comment();
-          const end = new Comment();
+        marker.before(start, end);
+        oldKeys.splice(index, 0, newKey);
+        burrow.splice(index, 0, { key: newKey, start, end });
 
-          marker.before(start, end);
-          oldKeys.splice(index, 0, newKey);
-          burrow.splice(index, 0, { key: newKey, start, end });
-        }
+        oldMap.add(newKey);
       }
     } else {
       const { start, end } = burrow.splice(index, 1)[0];
       cache[oldKey] = takeNodes(start, end);
 
       oldKeys.splice(index, 1);
+      oldMap.delete(oldKey);
     }
   }
 }
