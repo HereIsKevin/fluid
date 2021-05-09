@@ -1,31 +1,25 @@
-export { Compiler, Updater };
+export { Compiler };
 
-import { Template } from "./template";
 import {
-  BaseUpdater,
-  attributeUpdater,
-  eventUpdater,
-  propertyUpdater,
-  referenceUpdater,
-  sequenceUpdater,
-  styleUpdater,
-  templateUpdater,
-  textUpdater,
-  toggleUpdater,
-} from "./updater";
+  BoundDirective,
+  ElementDirective,
+  ValueDirective,
+} from "./directives/base";
+import { Template } from "./template";
 
 interface Updater {
   index: number;
-  base: BaseUpdater;
+  base: BoundDirective<unknown>;
 }
 
 class Compiler {
+  public static elementDirectives: typeof ElementDirective[] = [];
+  public static valueDirectives: typeof ValueDirective[] = [];
+
   public updaters: Record<string, Updater[]>;
 
   public template: Template;
   public fragment: DocumentFragment;
-
-  private id: number;
 
   public constructor(template: Template) {
     this.updaters = {};
@@ -33,21 +27,12 @@ class Compiler {
     this.template = template;
     this.fragment = this.template.generate();
 
-    this.id = 0;
-
     this.compile(this.fragment);
-  }
-
-  private getId(): string {
-    const id = String(this.id);
-    this.id++;
-
-    return id;
   }
 
   private compile(node: Node): void {
     if (node instanceof Element) {
-      this.compileAttributes(node);
+      this.compileElement(node);
     }
 
     this.compileValues(node);
@@ -57,7 +42,7 @@ class Compiler {
     }
   }
 
-  private compileAttributes(element: Element): void {
+  private compileElement(element: Element): void {
     let id: string | undefined;
 
     for (const attribute of element.getAttributeNames()) {
@@ -65,87 +50,25 @@ class Compiler {
       const matches = value.match(/^<!--([0-9]+)-->$/);
 
       if (matches !== null) {
-        if (typeof id === "undefined") {
-          id = this.getId();
+        if (id === undefined) {
+          id = matches[1];
           this.updaters[id] = [];
 
-          element.setAttribute("data-fluid-id", id);
+          element.setAttribute("fluid-id", id);
         }
 
         const index = Number(matches[1]);
-
-        const eventMatches = attribute.match(/^@(.+)$/);
-        const toggleMatches = attribute.match(/^(.+)\?$/);
-        const propertyMatches = attribute.match(/^\.(.+)$/);
+        const actual = this.template.values[index];
 
         element.removeAttribute(attribute);
+
+        const base =
 
         let base: BaseUpdater;
 
         if (eventMatches !== null) {
-          base = eventUpdater(eventMatches[1]);
-        } else if (toggleMatches !== null) {
-          base = toggleUpdater(toggleMatches[1]);
-        } else if (propertyMatches !== null) {
-          base = propertyUpdater(propertyMatches[1]);
-        } else if (attribute === "ref") {
-          base = referenceUpdater();
-        } else if (attribute === "style") {
-          if (typeof this.template.values[index] === "string") {
-            base = attributeUpdater("style");
-          } else {
-            base = styleUpdater();
-          }
-        } else {
-          base = attributeUpdater(attribute);
+          base = updaters.event();
         }
-
-        this.updaters[id].push({ index, base });
-
-        element.removeAttribute(attribute);
-      }
-    }
-  }
-
-  private findComments(node: Node): Comment[] {
-    const result: Comment[] = [];
-
-    for (const child of node.childNodes) {
-      if (child instanceof Comment) {
-        result.push(child);
-      }
-    }
-
-    return result;
-  }
-
-  private compileValues(node: Node): void {
-    for (const comment of this.findComments(node)) {
-      const value = comment.nodeValue ?? "";
-      const matches = value.match(/^([0-9]+)$/);
-
-      if (matches !== null) {
-        const index = Number(matches[1]);
-        const actual = this.template.values[index];
-
-        const id = this.getId();
-        const node = document.createElement("span");
-
-        node.setAttribute("data-fluid-id", id);
-
-        let base: BaseUpdater;
-
-        if (Array.isArray(actual)) {
-          base = sequenceUpdater();
-        } else if (actual instanceof Template) {
-          base = templateUpdater();
-        } else {
-          base = textUpdater();
-        }
-
-        this.updaters[id] = [{ index, base }];
-
-        comment.replaceWith(node);
       }
     }
   }
