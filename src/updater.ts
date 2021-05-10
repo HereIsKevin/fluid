@@ -1,149 +1,207 @@
 export {
-  BaseUpdater,
-  BoundUpdater,
+  Base,
+  Updater,
   attributeUpdater,
   eventUpdater,
   propertyUpdater,
   referenceUpdater,
   sequenceUpdater,
-  styleUpdater,
   templateUpdater,
   textUpdater,
   toggleUpdater,
 };
 
-import {
-  Arrangement,
-  renderArrangement,
-  renderSequence,
-  renderTemplate,
-} from "./render";
+import { clearBetween, clearFrom } from "./helper";
+import { mount } from "./mount";
 import { Template } from "./template";
 
-type BaseUpdater = (node: Node) => BoundUpdater;
-type BoundUpdater = (value: unknown) => void;
+interface Hole {
+  start: Comment;
+  end: Comment;
+}
 
-function eventUpdater(name: string): BaseUpdater {
+type Base = (node: Node) => Updater;
+type Updater = (value: unknown) => void;
+
+function eventUpdater(name: string): Base {
   return (node) => {
-    let last: EventListener | undefined;
+    let oldValue: EventListener | undefined;
 
-    return (value) => {
-      if (typeof last !== "undefined") {
-        node.removeEventListener(name, last);
+    return (newValue) => {
+      if (oldValue === newValue) {
+        return;
       }
 
-      last = value as EventListener;
-      node.addEventListener(name, last);
+      if (typeof oldValue !== "undefined") {
+        node.removeEventListener(name, oldValue);
+      }
+
+      oldValue = newValue as EventListener;
+      node.addEventListener(name, oldValue);
     };
   };
 }
 
-function toggleUpdater(name: string): BaseUpdater {
+function toggleUpdater(name: string): Base {
   return (node) => {
-    return (value) => {
-      if (value) {
-        (node as Element).setAttribute(name, "");
+    let oldValue: unknown;
+
+    if (!(node instanceof Element)) {
+      throw new Error("toggle updater target must be element");
+    }
+
+    return (newValue) => {
+      if (oldValue === newValue) {
+        return;
+      }
+
+      oldValue = newValue;
+
+      if (oldValue) {
+        node.setAttribute(name, "");
       } else {
-        (node as Element).removeAttribute(name);
+        node.removeAttribute(name);
       }
     };
   };
 }
 
-function propertyUpdater(name: string): BaseUpdater {
+function propertyUpdater(name: string): Base {
   return (node) => {
-    return (value) => {
-      Reflect.set(node, name, value);
+    let oldValue: unknown;
+
+    return (newValue) => {
+      if (oldValue === newValue) {
+        return;
+      }
+
+      oldValue = newValue;
+      Reflect.set(node, name, oldValue);
     };
   };
 }
 
-function referenceUpdater(): BaseUpdater {
+function referenceUpdater(): Base {
   return (node) => {
-    return (value) => {
-      (value as (node: Node) => void)(node);
+    let oldValue: (node: Node) => void | undefined;
+
+    return (newValue) => {
+      if (oldValue === newValue) {
+        return;
+      }
+
+      oldValue = newValue as (node: Node) => void;
+      oldValue(node);
     };
   };
 }
 
-function styleUpdater(): BaseUpdater {
+function attributeUpdater(name: string): Base {
   return (node) => {
-    let oldValues: Record<string, unknown> = {};
+    let oldValue: unknown;
+
+    if (!(node instanceof Element)) {
+      throw new Error("attribute updater target must be element");
+    }
+
+    return (newValue) => {
+      if (oldValue === newValue) {
+        return;
+      }
+
+      oldValue = newValue;
+      node.setAttribute(name, String(oldValue));
+    };
+  };
+}
+
+function sequenceUpdater(): Base {
+  return (node) => {
+    const startMarker = new Comment();
+    const endMarker = new Comment();
+
+    (node as ChildNode).replaceWith(startMarker, endMarker);
+
+    const holes: Hole[] = [];
 
     return (value) => {
-      const element = node as HTMLElement;
-      const values = value as Record<string, unknown>;
+      const templates = value as Template[];
 
-      for (const key in values) {
-        const oldValue = oldValues[key];
-        const newValue = values[key];
+      if (holes.length == 0) {
+        for (const template of templates) {
+          const start = new Comment();
+          const end = new Comment();
 
-        if (oldValue !== newValue) {
-          Reflect.set(element.style, key, newValue);
+          endMarker.before(start, end);
+          mount(start, end, template);
+
+          holes.push({ start, end });
         }
+
+        return;
       }
 
-      oldValues = values;
+      if (templates.length === 0) {
+        clearBetween(startMarker, endMarker);
+        holes.length = 0;
+
+        return;
+      }
+
+      if (templates.length < holes.length) {
+        const start = holes[templates.length].start;
+        const end = holes[holes.length - 1].end;
+
+        clearFrom(start, end);
+
+        holes.length = templates.length;
+      }
+
+      while (templates.length > holes.length) {
+        const start = new Comment();
+        const end = new Comment();
+
+        endMarker.before(start, end);
+        holes.push({ start, end });
+      }
+
+      for (let index = 0; index < templates.length; index++) {
+        const template = templates[index];
+        const { start, end } = holes[index];
+
+        mount(start, end, template);
+      }
     };
   };
 }
 
-function attributeUpdater(name: string): BaseUpdater {
-  return (node) => {
-    return (value) => {
-      (node as Element).setAttribute(name, String(value));
-    };
-  };
-}
-
-function sequenceUpdater(): BaseUpdater {
+function templateUpdater(): Base {
   return (node) => {
     const start = new Comment();
     const end = new Comment();
 
     (node as ChildNode).replaceWith(start, end);
 
-    let keyed: boolean | undefined;
-
     return (value) => {
-      if (
-        typeof keyed === "undefined" &&
-        Array.isArray(value) &&
-        value.length > 0
-      ) {
-        keyed = Array.isArray(value[0]);
-      }
-
-      if (keyed) {
-        renderArrangement(start, end, value as Arrangement[]);
-      } else {
-        renderSequence(start, end, value as Template[]);
-      }
+      mount(start, end, value as Template);
     };
   };
 }
 
-function templateUpdater(): BaseUpdater {
+function textUpdater(): Base {
   return (node) => {
-    const start = new Comment();
-    const end = new Comment();
+    let oldValue: unknown;
 
-    (node as ChildNode).replaceWith(start, end);
-
-    return (value) => {
-      renderTemplate(start, end, value as Template);
-    };
-  };
-}
-
-function textUpdater(): BaseUpdater {
-  return (node) => {
     const text = new Text();
-
     (node as ChildNode).replaceWith(text);
 
-    return (value) => {
-      text.nodeValue = String(value);
+    return (newValue) => {
+      if (oldValue === newValue) {
+        return;
+      }
+
+      oldValue = newValue;
+      text.nodeValue = String(oldValue);
     };
   };
 }

@@ -4,35 +4,29 @@ class Template {
   public strings: TemplateStringsArray;
   public values: unknown[];
 
+  private interpolated?: string;
+
   public constructor(strings: TemplateStringsArray, values: unknown[]) {
     this.strings = strings;
     this.values = values;
   }
 
-  public equals(template: Template): boolean {
-    if (this.strings.length !== template.strings.length) {
-      return false;
-    }
+  public interpolate(): string {
+    if (this.interpolated === undefined) {
+      this.interpolated = this.strings[0];
 
-    for (let index = 0; index < this.strings.length; index++) {
-      if (this.strings[index] !== template.strings[index]) {
-        return false;
+      for (let index = 1; index < this.strings.length; index++) {
+        this.interpolated += `<!--${index - 1}-->`;
+        this.interpolated += this.strings[index];
       }
     }
 
-    return true;
+    return this.interpolated;
   }
 
   public generate(): DocumentFragment {
-    let result = this.strings[0];
-
-    for (let index = 1; index < this.strings.length; index++) {
-      result += `<!--${index - 1}-->`;
-      result += this.strings[index];
-    }
-
     const template = document.createElement("template");
-    template.innerHTML = result;
+    template.innerHTML = this.interpolate();
 
     return template.content;
   }

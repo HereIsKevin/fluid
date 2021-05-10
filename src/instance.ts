@@ -1,51 +1,55 @@
-export { Instance };
+export { compile };
 
-import { Compiler } from "./compiler";
+import { Compiler, Instruction } from "./compiler";
 import { Template } from "./template";
-import { BoundUpdater } from "./updater";
+import { Updater } from "./updater";
 
-class Instance {
-  private static compilers: Compiler[] = [];
+const cache: Record<string, CachedTemplate> = {};
 
-  public updaters: Record<number, BoundUpdater>;
+interface CachedTemplate {
+  instructions: Record<string, Instruction[]>;
+  fragment: DocumentFragment;
+}
 
-  public template: Template;
-  public fragment: DocumentFragment;
+interface CompiledTemplate {
+  updaters: Record<number, Updater>;
+  fragment: DocumentFragment;
+}
 
-  private compiler: Compiler;
+function initial(template: Template): CachedTemplate {
+  const compiler = new Compiler(template);
 
-  public constructor(template: Template) {
-    this.updaters = {};
+  const interpolated = template.interpolate();
+  const compiled = {
+    instructions: compiler.instructions,
+    fragment: compiler.fragment,
+  };
 
-    this.template = template;
-    this.compiler = this.getCompiler(this.template);
-    this.fragment = this.compiler.fragment.cloneNode(true) as DocumentFragment;
+  cache[interpolated] = compiled;
 
-    this.instantiate();
-  }
+  return compiled;
+}
 
-  private getCompiler(template: Template): Compiler {
-    for (const compiler of Instance.compilers) {
-      if (compiler.template.equals(template)) {
-        return compiler;
-      }
+function compile(template: Template): CompiledTemplate {
+  const interpolated = template.interpolate();
+  const cached = cache[interpolated] ?? initial(template);
+
+  const updaters: Record<number, Updater> = {};
+  const fragment = cached.fragment.cloneNode(true) as DocumentFragment;
+
+  for (const target of fragment.querySelectorAll("[data-fluid-id]")) {
+    const id = target.getAttribute("data-fluid-id");
+
+    if (id === null) {
+      continue;
     }
 
-    const compiler = new Compiler(template);
-    Instance.compilers.push(compiler);
-
-    return compiler;
-  }
-
-  private instantiate(): void {
-    for (const target of this.fragment.querySelectorAll("[data-fluid-id]")) {
-      const id = Number(target.getAttribute("data-fluid-id"));
-
-      for (const { index, base } of this.compiler.updaters[id]) {
-        this.updaters[index] = base(target);
-      }
-
-      target.removeAttribute("data-fluid-id");
+    for (const { index, base } of cached.instructions[id]) {
+      updaters[index] = base(target);
     }
+
+    target.removeAttribute("data-fluid-id");
   }
+
+  return { updaters, fragment };
 }

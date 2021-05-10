@@ -1,48 +1,36 @@
-export { Compiler, Updater };
+export { Compiler, Instruction };
 
 import { Template } from "./template";
 import {
-  BaseUpdater,
+  Base,
   attributeUpdater,
   eventUpdater,
   propertyUpdater,
   referenceUpdater,
   sequenceUpdater,
-  styleUpdater,
   templateUpdater,
   textUpdater,
   toggleUpdater,
 } from "./updater";
 
-interface Updater {
+interface Instruction {
   index: number;
-  base: BaseUpdater;
+  base: Base;
 }
 
 class Compiler {
-  public updaters: Record<string, Updater[]>;
+  public instructions: Record<string, Instruction[]>;
 
   public template: Template;
   public fragment: DocumentFragment;
 
-  private id: number;
-
   public constructor(template: Template) {
-    this.updaters = {};
+    this.instructions = {};
 
     this.template = template;
     this.fragment = this.template.generate();
 
-    this.id = 0;
-
     this.compile(this.fragment);
-  }
-
-  private getId(): string {
-    const id = String(this.id);
-    this.id++;
-
-    return id;
   }
 
   private compile(node: Node): void {
@@ -66,8 +54,8 @@ class Compiler {
 
       if (matches !== null) {
         if (typeof id === "undefined") {
-          id = this.getId();
-          this.updaters[id] = [];
+          id = matches[1];
+          this.instructions[id] = [];
 
           element.setAttribute("data-fluid-id", id);
         }
@@ -80,7 +68,7 @@ class Compiler {
 
         element.removeAttribute(attribute);
 
-        let base: BaseUpdater;
+        let base: Base;
 
         if (eventMatches !== null) {
           base = eventUpdater(eventMatches[1]);
@@ -90,17 +78,11 @@ class Compiler {
           base = propertyUpdater(propertyMatches[1]);
         } else if (attribute === "ref") {
           base = referenceUpdater();
-        } else if (attribute === "style") {
-          if (typeof this.template.values[index] === "string") {
-            base = attributeUpdater("style");
-          } else {
-            base = styleUpdater();
-          }
         } else {
           base = attributeUpdater(attribute);
         }
 
-        this.updaters[id].push({ index, base });
+        this.instructions[id].push({ index, base });
 
         element.removeAttribute(attribute);
       }
@@ -128,12 +110,12 @@ class Compiler {
         const index = Number(matches[1]);
         const actual = this.template.values[index];
 
-        const id = this.getId();
+        const id = matches[1];
         const node = document.createElement("span");
 
         node.setAttribute("data-fluid-id", id);
 
-        let base: BaseUpdater;
+        let base: Base;
 
         if (Array.isArray(actual)) {
           base = sequenceUpdater();
@@ -143,7 +125,7 @@ class Compiler {
           base = textUpdater();
         }
 
-        this.updaters[id] = [{ index, base }];
+        this.instructions[id] = [{ index, base }];
 
         comment.replaceWith(node);
       }
