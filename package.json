@@ -1,26 +1,7 @@
 {
   "name": "@hereiskevin/fluid",
   "version": "0.5.0",
-  "description": "Simple, lightweight, and blazing fast UI library",
-  "type": "module",
-  "exports": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "scripts": {
-    "clean": "shx rm -rf ./build/ ./dist/",
-    "watch:tsc": "tsc --watch",
-    "watch:rollup": "rollup --watch --silent --config ./rollup.config.js",
-    "watch": "npm-run-all --parallel watch:tsc watch:rollup",
-    "build:tsc": "tsc --declaration --declarationDir ./dist/",
-    "build:rollup": "rollup --config ./rollup.config.js",
-    "build:terser": "terser --config-file ./terser.json --output ./dist/index.min.js ./dist/index.js",
-    "build": "npm-run-all --sequential build:tsc build:rollup build:terser",
-    "format": "prettier --write ./src/ ./*.json ./*.js ./*.cjs ./*.md",
-    "lint": "eslint --fix --ext .ts ./src/"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/HereIsKevin/fluid.git"
-  },
+  "description": "Simple, lightweight, and fast UI library",
   "keywords": [
     "simple",
     "lightweight",
@@ -33,21 +14,34 @@
     "minimal",
     "template"
   ],
-  "author": "Kevin Feng",
-  "license": "MIT",
+  "homepage": "https://github.com/HereIsKevin/fluid#readme",
   "bugs": {
     "url": "https://github.com/HereIsKevin/fluid/issues"
   },
-  "homepage": "https://github.com/HereIsKevin/fluid#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HereIsKevin/fluid.git"
+  },
+  "license": "MIT",
+  "author": "Kevin Feng",
+  "type": "module",
+  "exports": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "rollup --config",
+    "clean": "rimraf ./dist/",
+    "format": "prettier --write ./*.js ./*.json ./*.md ./src/*.ts",
+    "lint": "eslint --fix ./src/*.ts",
+    "watch": "rollup --config --watch"
+  },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^4.28.0",
-    "@typescript-eslint/parser": "^4.28.0",
-    "eslint": "^7.29.0",
-    "npm-run-all": "^4.1.5",
-    "prettier": "^2.3.1",
-    "rollup": "^2.52.2",
-    "shx": "^0.3.3",
-    "terser": "^5.7.0",
-    "typescript": "^4.3.4"
+    "@rollup/plugin-typescript": "^8.3.0",
+    "@typescript-eslint/eslint-plugin": "^5.1.0",
+    "@typescript-eslint/parser": "^5.1.0",
+    "eslint": "^8.0.1",
+    "prettier": "^2.4.1",
+    "rimraf": "^3.0.2",
+    "rollup": "^2.58.0",
+    "typescript": "^4.4.4"
   }
 }

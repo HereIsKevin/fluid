@@ -1,8 +1,5 @@
 benchmarks/
-build/
 src/
-.eslintrc.cjs
-.prettierrc.json
+.eslintrc.json
 rollup.config.js
-terser.json
 tsconfig.json

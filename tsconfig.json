@@ -1,8 +1,12 @@
 {
   "compilerOptions": {
-    "outDir": "./build/",
-    "target": "esnext",
-    "strict": true
+    "strict": true,
+    "declaration": true,
+    "declarationDir": "./",
+    "sourceMap": true,
+    "forceConsistentCasingInFileNames": true,
+    "target": "ESNext",
+    "skipLibCheck": true
   },
-  "include": ["./src/"]
+  "exclude": ["./dist/"]
 }

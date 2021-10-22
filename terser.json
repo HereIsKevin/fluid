@@ -1,7 +1,0 @@
-{
-  "mangle": {
-    "properties": true
-  },
-  "warnings": "verbose",
-  "module": true
-}
