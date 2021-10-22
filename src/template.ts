@@ -1,15 +1,13 @@
-export { Template, html };
+export class Template {
+  strings: TemplateStringsArray;
+  values: unknown[];
 
-class Template {
-  public strings: TemplateStringsArray;
-  public values: unknown[];
-
-  public constructor(strings: TemplateStringsArray, values: unknown[]) {
+  constructor(strings: TemplateStringsArray, values: unknown[]) {
     this.strings = strings;
     this.values = values;
   }
 
-  public equals(template: Template): boolean {
+  equals(template: Template): boolean {
     if (this.strings.length !== template.strings.length) {
       return false;
     }
@@ -23,7 +21,7 @@ class Template {
     return true;
   }
 
-  public generate(): DocumentFragment {
+  generate(): DocumentFragment {
     let result = this.strings[0];
 
     for (let index = 1; index < this.strings.length; index++) {
@@ -38,6 +36,9 @@ class Template {
   }
 }
 
-function html(strings: TemplateStringsArray, ...values: unknown[]): Template {
+export function html(
+  strings: TemplateStringsArray,
+  ...values: unknown[]
+): Template {
   return new Template(strings, values);
 }
